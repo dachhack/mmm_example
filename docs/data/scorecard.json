@@ -1,0 +1,140 @@
+{
+  "fit": {
+    "r2": 0.768061833441672,
+    "mape": 4.627756414155596,
+    "pp_interval_nominal": 89.0,
+    "pp_interval_coverage": 34.6
+  },
+  "channels": [
+    {
+      "channel": "tv",
+      "true_contrib": 378.4055168298192,
+      "est_contrib": 273.06359089860524,
+      "ci": [
+        102.27486724225592,
+        444.6219866280234
+      ],
+      "hit": true,
+      "true_theta": 0.75,
+      "est_theta": 0.7309930055084872,
+      "theta_ci": [
+        0.553718803021486,
+        0.8938686971156313
+      ],
+      "theta_hit": true
+    },
+    {
+      "channel": "search",
+      "true_contrib": 235.79256255899824,
+      "est_contrib": 245.05704431407176,
+      "ci": [
+        141.45698448786518,
+        382.1419836796886
+      ],
+      "hit": true,
+      "true_theta": 0.1,
+      "est_theta": 0.23374778658040432,
+      "theta_ci": [
+        0.05432414300751986,
+        0.45070275769552315
+      ],
+      "theta_hit": true
+    },
+    {
+      "channel": "social",
+      "true_contrib": 301.2647348860372,
+      "est_contrib": 220.670521230276,
+      "ci": [
+        101.22306754546987,
+        380.7971853257434
+      ],
+      "hit": true,
+      "true_theta": 0.4,
+      "est_theta": 0.46033546730640673,
+      "theta_ci": [
+        0.21395790242094748,
+        0.7185882647637962
+      ],
+      "theta_hit": true
+    },
+    {
+      "channel": "affiliate",
+      "true_contrib": 137.35177040704968,
+      "est_contrib": 197.05618608177326,
+      "ci": [
+        102.10755604729586,
+        320.28322334774646
+      ],
+      "hit": true,
+      "true_theta": 0.3,
+      "est_theta": 0.4170482193326396,
+      "theta_ci": [
+        0.22782315517378557,
+        0.6250777269781191
+      ],
+      "theta_hit": true
+    },
+    {
+      "channel": "brand",
+      "true_contrib": 81.90386124767525,
+      "est_contrib": 75.91115422078953,
+      "ci": [
+        28.272551929699503,
+        140.26552573508553
+      ],
+      "hit": true,
+      "true_theta": 0.6,
+      "est_theta": 0.5488765573749678,
+      "theta_ci": [
+        0.27908947525191874,
+        0.825711844786515
+      ],
+      "theta_hit": true
+    }
+  ],
+  "summary": {
+    "n_channels": 5,
+    "contrib_ci_hits": 5,
+    "theta_hits": 5,
+    "media_total_true": 1134.7,
+    "media_total_est": 1011.8,
+    "media_under_credit_pct": 10.8,
+    "overconfident": true
+  },
+  "nonmedia": {
+    "true": 1664.0,
+    "est": 1777.2
+  },
+  "naive": {
+    "r2": 0.622,
+    "intercept": 1964.0,
+    "channels": [
+      {
+        "channel": "tv",
+        "true_contrib": 378.4055168298192,
+        "naive_contrib": 34.4
+      },
+      {
+        "channel": "search",
+        "true_contrib": 235.79256255899824,
+        "naive_contrib": 231.5
+      },
+      {
+        "channel": "social",
+        "true_contrib": 301.2647348860372,
+        "naive_contrib": 115.6
+      },
+      {
+        "channel": "affiliate",
+        "true_contrib": 137.35177040704968,
+        "naive_contrib": 58.5
+      },
+      {
+        "channel": "brand",
+        "true_contrib": 81.90386124767525,
+        "naive_contrib": 109.6
+      }
+    ]
+  },
+  "note": "89% credible/predictive intervals throughout. 'overconfident' = empirical coverage well below the nominal 89%."
+}

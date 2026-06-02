@@ -1,6 +1,388 @@
-"""draftzone_mmm.datagen — see docs/ specs. Refactor from docs/prototype_src/ where applicable.
+"""draftzone_mmm.datagen — DraftZone v2 synthetic data generator.
 
-CONTRACT: this module is part of the modeling pipeline and MUST NOT read the sealed answer
-key (see CLAUDE.md). Only the evaluation module is permitted to access it.
+Same DFS-subscription premise as the prototype, redesigned so the *full
+experimentation path* is possible: a randomized geo-experiment for **every** channel,
+staggered over time (a realistic always-on testing program).
+
+Writes:
+  data/national_weekly.csv   public modeling dataset
+  data/geo_experiments.csv   rotating per-channel experiment panel
+  data/config.json           public knobs (confound level, seeds, calendar) — NO truth
+  data_sealed/ground_truth.json   SEALED answer key (every true parameter + effect)
+
+CONTRACT: this module WRITES the sealed truth but the rest of the pipeline must never
+READ it (enforced by tests/test_no_truth_leak.py). Only evaluate.py may read it back.
+
+Causal chain (per channel):
+    spend --(noisy, mildly concave)--> impressions
+    impressions --geometric adstock(theta)--> --Hill(half_sat, slope)--> x beta --> contribution
+    conversions = baseline + trend + seasonality + controls + sum(contributions) + noise
 """
-raise NotImplementedError("Implement datagen per docs/ specs and prototype_src/ reference.")
+from __future__ import annotations
+
+import argparse
+import json
+import pathlib
+
+import numpy as np
+import pandas as pd
+
+from .transforms import geometric_adstock, hill_saturation
+
+REPO = pathlib.Path(__file__).resolve().parents[2]
+DATA_DIR = REPO / "data"
+SEALED_DIR = REPO / "data_sealed"
+
+CHANNELS = ["tv", "search", "social", "affiliate", "brand"]
+
+# ----------------------------------------------------------------------
+# TRUE per-channel parameters (the sealed truth). Deliberately DISTINCT so
+# recovery is a genuine test: theta spans low (search .10) -> high (tv .75).
+# hs/slope live on the IMPRESSION-adstock scale. beta = max conversions/wk.
+# ----------------------------------------------------------------------
+CH = {
+    "tv": dict(base_spend=42000, season_coef=9000, flight=True,
+               imp_per_dollar=9.0, noise=0.10, theta=0.75, hs=160000, slope=1.6, beta=420),
+    "search": dict(base_spend=16000, season_coef=5000, flight=False,
+                   imp_per_dollar=22.0, noise=0.06, theta=0.10, hs=120000, slope=2.0, beta=300),
+    "social": dict(base_spend=24000, season_coef=5000, flight=False,
+                   imp_per_dollar=30.0, noise=0.08, theta=0.40, hs=260000, slope=1.5, beta=350),
+    "affiliate": dict(base_spend=9000, season_coef=3000, flight=True,
+                      imp_per_dollar=15.0, noise=0.12, theta=0.30, hs=45000, slope=2.4, beta=180),
+    "brand": dict(base_spend=6000, season_coef=1500, flight=False,
+                  imp_per_dollar=12.0, noise=0.10, theta=0.60, hs=70000, slope=1.3, beta=120),
+}
+
+# Controls / baseline truth
+BASELINE = 1200.0
+TREND_PER_WK = 4.0
+PROMO_EFFECT = 180.0
+PRICE_COEF = -6.0
+COMP_COEF = -2.2
+HOLIDAY_EFFECT = 90.0
+
+# Rotating geo-experiment calendar: one randomized test per channel, staggered.
+GEO_CALENDAR = {
+    "social": "2024-Q1",
+    "search": "2024-Q2",
+    "affiliate": "2024-Q3",
+    "brand": "2024-Q4",
+    "tv": "2025-Q1",
+}
+
+# Per-channel geo-experiment design. BAU impressions and per-market half-sat are
+# chosen so each market sits on the RESPONSIVE part of the Hill curve (verified by
+# an assertion below) — NOT saturated. INCREMENT is the campaign bump (treatment only).
+GEO_DESIGN = {
+    # channel: BAU impr/mkt/wk, season sensitivity (~bau/1000, a modest confounding ripple),
+    # increment impr (campaign bump, treatment only), per-market half_sat (~bau -> responsive).
+    "tv": dict(bau=55000, season_sens=55, increment=40000, hs_mkt=80000),
+    "search": dict(bau=42000, season_sens=42, increment=30000, hs_mkt=55000),
+    "social": dict(bau=40000, season_sens=40, increment=30000, hs_mkt=50000),
+    "affiliate": dict(bau=28000, season_sens=28, increment=22000, hs_mkt=35000),
+    "brand": dict(bau=24000, season_sens=24, increment=20000, hs_mkt=32000),
+}
+
+TARGET_CONFOUND = 0.60
+N_MARKETS = 80
+T_NATIONAL = 156
+
+
+# ----------------------------------------------------------------------
+# National series
+# ----------------------------------------------------------------------
+def _national_controls(week_idx):
+    """Build the deterministic non-media truth (baseline, trend, season, controls)."""
+    T = len(week_idx)
+    trend = TREND_PER_WK * week_idx
+
+    # NFL-season seasonality: annual cycle peaking ~Sep-Jan + a sharper playoff bump.
+    phase = 2 * np.pi * (week_idx - 35) / 52.0
+    seasonal_smooth = 350.0 * (0.5 + 0.5 * np.cos(phase))
+    playoff = np.zeros(T)
+    for yr_start in range(0, T, 52):
+        for w in range(2, 7):  # Jan playoff weeks
+            if yr_start + w < T:
+                playoff[yr_start + w] += 120.0
+    seasonality = seasonal_smooth + playoff
+
+    promo_flag = np.zeros(T)
+    for w in [10, 11, 33, 60, 61, 85, 110, 111, 138, 139]:
+        if w < T:
+            promo_flag[w] = 1
+    promo_contrib = PROMO_EFFECT * promo_flag
+
+    price_index = np.ones(T) * 100.0
+    price_index[45:] = 108.0
+    price_index[100:] = 115.0
+    price_contrib = PRICE_COEF * (price_index - 100.0)
+
+    return dict(
+        trend=trend, seasonality=seasonality, promo_flag=promo_flag,
+        promo_contrib=promo_contrib, price_index=price_index, price_contrib=price_contrib,
+    )
+
+
+def _channel_spend(p, expected_demand, season_scale, rng, T):
+    """One channel's weekly spend: base + season ramp (confound) + indep noise + flighting."""
+    season_part = season_scale * p["season_coef"] * expected_demand
+    indep = rng.normal(0, p["base_spend"] * 0.35, T)
+    spend = p["base_spend"] + season_part + indep
+    if p["flight"]:
+        dark = rng.random(T) < 0.25
+        spend = np.where(dark, spend * 0.1, spend)
+    return np.clip(spend, 0, None)
+
+
+def _realized_confound(season_scale, expected_demand, seasonality, seeds, T):
+    """Realized corr(total spend, seasonality) at a given season_scale (deterministic in seed)."""
+    rng = np.random.default_rng(seeds)
+    total = np.zeros(T)
+    for _, p in CH.items():
+        total += _channel_spend(p, expected_demand, season_scale, rng, T)
+    return float(np.corrcoef(total, seasonality)[0, 1])
+
+
+def _tune_confound(expected_demand, seasonality, seeds, T, target=TARGET_CONFOUND):
+    """Bisection on a global season_scale so realized confound matches the target."""
+    lo, hi = 0.0, 4.0
+    best = 1.0
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        c = _realized_confound(mid, expected_demand, seasonality, seeds, T)
+        best = mid
+        if abs(c - target) < 0.005:
+            break
+        if c < target:
+            lo = mid
+        else:
+            hi = mid
+    return best
+
+
+def generate_national(seed=2024):
+    """Generate the national weekly dataset and the national portion of the truth."""
+    rng = np.random.default_rng(seed)
+    week_idx = np.arange(T_NATIONAL)
+    dates = pd.date_range("2023-01-01", periods=T_NATIONAL, freq="W-SUN")
+    ctrl = _national_controls(week_idx)
+    seasonality = ctrl["seasonality"]
+
+    competitor_pressure = np.clip(
+        50 + 30 * np.sin(2 * np.pi * week_idx / 26 + 1.0) + rng.normal(0, 8, T_NATIONAL),
+        0, None,
+    )
+    comp_contrib = COMP_COEF * (competitor_pressure - competitor_pressure.mean())
+
+    holiday_flag = np.zeros(T_NATIONAL)
+    for w in [5, 35, 47, 57, 87, 99, 109, 139, 151]:
+        if w < T_NATIONAL:
+            holiday_flag[w] = 1
+    holiday_contrib = HOLIDAY_EFFECT * holiday_flag
+
+    expected_demand = (seasonality - seasonality.mean()) / seasonality.std()
+
+    # Tune the confound to the target by scaling all season_coefs jointly.
+    spend_seed = seed + 7
+    season_scale = _tune_confound(expected_demand, seasonality, spend_seed, T_NATIONAL)
+    rng_spend = np.random.default_rng(spend_seed)
+
+    data = {"week": dates}
+    channel_contribs = {}
+    channels_truth = {}
+    spends = []
+    for name in CHANNELS:
+        p = CH[name]
+        spend = _channel_spend(p, expected_demand, season_scale, rng_spend, T_NATIONAL)
+        imp_mean = p["imp_per_dollar"] * spend ** 0.97
+        impressions = np.clip(imp_mean * rng.normal(1.0, p["noise"], T_NATIONAL), 0, None)
+
+        ad = geometric_adstock(impressions, p["theta"])
+        sat = hill_saturation(ad, p["hs"], p["slope"])
+        contrib = p["beta"] * sat
+
+        data[f"{name}_spend"] = spend
+        data[f"{name}_impressions"] = impressions
+        channel_contribs[name] = contrib
+        spends.append(spend)
+        channels_truth[name] = dict(
+            theta=p["theta"], half_sat=float(p["hs"]), slope=p["slope"], beta=float(p["beta"]),
+            imp_per_dollar=p["imp_per_dollar"], mean_spend=float(spend.mean()),
+            mean_contrib=float(contrib.mean()),
+        )
+
+    media_total = sum(channel_contribs.values())
+    expected_conversions = (
+        BASELINE + ctrl["trend"] + seasonality + ctrl["promo_contrib"]
+        + ctrl["price_contrib"] + comp_contrib + holiday_contrib + media_total
+    )
+    conversions = np.clip(
+        expected_conversions * rng.normal(1.0, 0.05, T_NATIONAL) + rng.normal(0, 35, T_NATIONAL),
+        0, None,
+    )
+
+    data["conversions"] = conversions
+    data["promo_flag"] = ctrl["promo_flag"]
+    data["price_index"] = ctrl["price_index"]
+    data["competitor_pressure"] = competitor_pressure
+    data["holiday_flag"] = holiday_flag
+    df = pd.DataFrame(data)
+
+    total_spend = np.sum(spends, axis=0)
+    realized_corr = float(np.corrcoef(total_spend, seasonality)[0, 1])
+
+    decomp = {
+        "baseline": float(BASELINE),
+        "trend": float(ctrl["trend"].mean()),
+        "seasonality": float(seasonality.mean()),
+        "promo": float(ctrl["promo_contrib"].mean()),
+        "price": float(ctrl["price_contrib"].mean()),
+        "competitor": float(comp_contrib.mean()),
+        "holiday": float(holiday_contrib.mean()),
+    }
+    for name in CHANNELS:
+        decomp[f"media_{name}"] = float(channel_contribs[name].mean())
+
+    truth = dict(
+        meta=dict(
+            T=T_NATIONAL, baseline=BASELINE, trend_per_wk=TREND_PER_WK,
+            promo_effect=PROMO_EFFECT, price_coef=PRICE_COEF, comp_coef=COMP_COEF,
+            holiday_effect=HOLIDAY_EFFECT, target_corr_spend_season=TARGET_CONFOUND,
+            realized_corr_totalspend_season=realized_corr, season_scale=float(season_scale),
+        ),
+        channels=channels_truth,
+        avg_contribution_decomposition=decomp,
+    )
+    return df, truth
+
+
+# ----------------------------------------------------------------------
+# Rotating geo-experiment panel
+# ----------------------------------------------------------------------
+def generate_geo_experiments(seed=808, T_exp=20, pre_period=6, camp_len=12):
+    """One randomized geo-experiment per channel, staggered across the calendar.
+
+    Returns (tidy_dataframe, truth_dict, assignment_dict). Units are chosen so markets
+    sit on the responsive part of the Hill curve (verified by an assertion).
+    """
+    rows = []
+    exp_truth = {}
+    assignments = {}
+
+    for ci, channel in enumerate(CHANNELS):
+        p = CH[channel]
+        g = GEO_DESIGN[channel]
+        rng = np.random.default_rng(seed + 101 * (ci + 1))
+        week = np.arange(T_exp)
+        camp_end = min(pre_period + camp_len, T_exp)
+        in_campaign = (week >= pre_period) & (week < camp_end)
+
+        # Shared seasonal confounder across markets (persists at market level).
+        season = 250 * (0.5 + 0.5 * np.sin(2 * np.pi * (week - 3) / T_exp))
+
+        market_base = rng.normal(320, 55, N_MARKETS)
+        perm = rng.permutation(N_MARKETS)
+        treat_idx = perm[: N_MARKETS // 2]
+        treat_mask = np.zeros(N_MARKETS, bool)
+        treat_mask[treat_idx] = True
+
+        def market_impr(treated, g=g):
+            bau = g["bau"] + g["season_sens"] * season + rng.normal(0, g["bau"] * 0.12, T_exp)
+            bau = np.clip(bau, 0, None)
+            extra = np.where(in_campaign, g["increment"], 0.0) if treated else np.zeros(T_exp)
+            return bau + extra
+
+        def contrib(impr, g=g, p=p):
+            ad = geometric_adstock(impr, p["theta"], normalize=True)
+            sat = hill_saturation(ad, g["hs_mkt"], p["slope"])
+            return p["beta"] * sat
+
+        # Verify units: mean adstocked impressions within ~0.3-2x of per-market half_sat.
+        mean_bau = g["bau"] + g["season_sens"] * season
+        mean_ad = geometric_adstock(mean_bau, p["theta"], normalize=True).mean()
+        ratio = mean_ad / g["hs_mkt"]
+        assert 0.3 <= ratio <= 2.0, (
+            f"{channel}: market adstock/half_sat ratio {ratio:.2f} outside responsive band "
+            "(would saturate the market and kill the lift)"
+        )
+
+        for m in range(N_MARKETS):
+            treated = bool(treat_mask[m])
+            impr = market_impr(treated)
+            spend = impr / p["imp_per_dollar"]  # nominal spend at channel efficiency
+            conv = market_base[m] + season + contrib(impr) + rng.normal(0, 15, T_exp)
+            for w in range(T_exp):
+                rows.append(dict(
+                    channel=channel, market=m, week=int(w), treated=int(treated),
+                    spend=float(spend[w]), impressions=float(impr[w]),
+                    conversions=float(conv[w]),
+                    campaign_window=int(bool(in_campaign[w])),
+                    pre_period=int(w < pre_period),
+                ))
+
+        # TRUE incremental effect (deterministic, mean BAU) over the campaign window.
+        inc_with = contrib(np.where(in_campaign, mean_bau + g["increment"], mean_bau))
+        inc_without = contrib(mean_bau)
+        true_inc = float((inc_with - inc_without)[in_campaign].mean())
+        exp_truth[channel] = dict(
+            quarter=GEO_CALENDAR[channel],
+            true_increment_per_market_week=true_inc,
+            increment_impr=float(g["increment"]),
+            n_markets=N_MARKETS, T_exp=T_exp, pre_period=pre_period, camp_end=int(camp_end),
+            market_adstock_over_halfsat=float(ratio),
+        )
+        assignments[channel] = dict(
+            seed=int(seed + 101 * (ci + 1)),
+            treated_markets=sorted(int(x) for x in treat_idx),
+        )
+
+    geo_df = pd.DataFrame(rows)
+    return geo_df, exp_truth, assignments
+
+
+def main():
+    ap = argparse.ArgumentParser(description="Generate DraftZone v2 synthetic data.")
+    ap.add_argument("--seed", type=int, default=2024)
+    ap.add_argument("--data-dir", default=str(DATA_DIR))
+    ap.add_argument("--sealed-dir", default=str(SEALED_DIR))
+    args = ap.parse_args()
+
+    data_dir = pathlib.Path(args.data_dir)
+    sealed_dir = pathlib.Path(args.sealed_dir)
+    data_dir.mkdir(parents=True, exist_ok=True)
+    sealed_dir.mkdir(parents=True, exist_ok=True)
+
+    nat_df, truth = generate_national(seed=args.seed)
+    geo_df, exp_truth, assignments = generate_geo_experiments(seed=args.seed // 2 + 808)
+    truth["experiments"] = exp_truth
+
+    nat_df.to_csv(data_dir / "national_weekly.csv", index=False)
+    geo_df.to_csv(data_dir / "geo_experiments.csv", index=False)
+
+    config = dict(
+        seed=args.seed,
+        n_weeks=T_NATIONAL,
+        channels=CHANNELS,
+        target_confound=TARGET_CONFOUND,
+        realized_confound=truth["meta"]["realized_corr_totalspend_season"],
+        geo_calendar=GEO_CALENDAR,
+        n_markets=N_MARKETS,
+        geo_assignments=assignments,
+        note="Public config — contains NO true model parameters (see data_sealed/ for truth).",
+    )
+    with open(data_dir / "config.json", "w") as f:
+        json.dump(config, f, indent=2)
+    with open(sealed_dir / "ground_truth.json", "w") as f:
+        json.dump(truth, f, indent=2)
+
+    corr = truth["meta"]["realized_corr_totalspend_season"]
+    base_share = BASELINE / nat_df["conversions"].mean()
+    print(f"Wrote {data_dir/'national_weekly.csv'} ({len(nat_df)} weeks)")
+    print(f"Wrote {data_dir/'geo_experiments.csv'} ({geo_df['channel'].nunique()} channel experiments)")
+    print(f"Realized confound corr(total spend, season) = {corr:.3f}  (target {TARGET_CONFOUND})")
+    print(f"Baseline share of conversions ~ {base_share:.0%}")
+    print("Sealed truth written to data_sealed/ground_truth.json (pipeline must not read it).")
+
+
+if __name__ == "__main__":
+    main()

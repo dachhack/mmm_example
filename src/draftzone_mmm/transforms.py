@@ -124,7 +124,8 @@ if __name__ == "__main__":
     assert abs(hill_saturation(np.array([200.]), 200, 2.0)[0] - 0.5) < 1e-6, "hill(half_sat)=0.5"
 
     # delayed adstock: peak shifts the mass
-    burst = np.zeros(20); burst[5]=100
+    burst = np.zeros(20)
+    burst[5] = 100
     d = delayed_adstock(burst, theta=0.6, peak=2, L=12)
     assert d.argmax() >= 6, "delayed adstock should peak AFTER the burst"
 

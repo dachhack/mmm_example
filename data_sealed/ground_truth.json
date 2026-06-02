@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "T": 156,
+    "baseline": 1200.0,
+    "trend_per_wk": 4.0,
+    "promo_effect": 180.0,
+    "price_coef": -6.0,
+    "comp_coef": -2.2,
+    "holiday_effect": 90.0,
+    "target_corr_spend_season": 0.6,
+    "realized_corr_totalspend_season": 0.602040745176445,
+    "season_scale": 0.84375
+  },
+  "channels": {
+    "tv": {
+      "theta": 0.75,
+      "half_sat": 160000.0,
+      "slope": 1.6,
+      "beta": 420.0,
+      "imp_per_dollar": 9.0,
+      "mean_spend": 31400.386471701917,
+      "mean_contrib": 378.4055168298192
+    },
+    "search": {
+      "theta": 0.1,
+      "half_sat": 120000.0,
+      "slope": 2.0,
+      "beta": 300.0,
+      "imp_per_dollar": 22.0,
+      "mean_spend": 15892.808564848154,
+      "mean_contrib": 235.79256255899824
+    },
+    "social": {
+      "theta": 0.4,
+      "half_sat": 260000.0,
+      "slope": 1.5,
+      "beta": 350.0,
+      "imp_per_dollar": 30.0,
+      "mean_spend": 26055.621636315584,
+      "mean_contrib": 301.2647348860372
+    },
+    "affiliate": {
+      "theta": 0.3,
+      "half_sat": 45000.0,
+      "slope": 2.4,
+      "beta": 180.0,
+      "imp_per_dollar": 15.0,
+      "mean_spend": 7157.664724160649,
+      "mean_contrib": 137.35177040704968
+    },
+    "brand": {
+      "theta": 0.6,
+      "half_sat": 70000.0,
+      "slope": 1.3,
+      "beta": 120.0,
+      "imp_per_dollar": 12.0,
+      "mean_spend": 5863.782213123337,
+      "mean_contrib": 81.90386124767525
+    }
+  },
+  "avg_contribution_decomposition": {
+    "baseline": 1200.0,
+    "trend": 310.0,
+    "seasonality": 186.53846153846158,
+    "promo": 11.538461538461538,
+    "price": -49.23076923076923,
+    "competitor": -1.1113617149068234e-14,
+    "holiday": 5.1923076923076925,
+    "media_tv": 378.4055168298192,
+    "media_search": 235.79256255899824,
+    "media_social": 301.2647348860372,
+    "media_affiliate": 137.35177040704968,
+    "media_brand": 81.90386124767525
+  },
+  "experiments": {
+    "tv": {
+      "quarter": "2025-Q1",
+      "true_increment_per_market_week": 65.2731264969382,
+      "increment_impr": 40000.0,
+      "n_markets": 80,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "market_adstock_over_halfsat": 0.6659273714787846
+    },
+    "search": {
+      "quarter": "2024-Q2",
+      "true_increment_per_market_week": 69.55787347919996,
+      "increment_impr": 30000.0,
+      "n_markets": 80,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "market_adstock_over_halfsat": 0.8548247771936026
+    },
+    "social": {
+      "quarter": "2024-Q1",
+      "true_increment_per_market_week": 60.951694745966,
+      "increment_impr": 30000.0,
+      "n_markets": 80,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "market_adstock_over_halfsat": 0.8731438920337157
+    },
+    "affiliate": {
+      "quarter": "2024-Q3",
+      "true_increment_per_market_week": 50.6200178330454,
+      "increment_impr": 22000.0,
+      "n_markets": 80,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "market_adstock_over_halfsat": 0.8827601010789935
+    },
+    "brand": {
+      "quarter": "2024-Q4",
+      "true_increment_per_market_week": 18.664806715344902,
+      "increment_impr": 20000.0,
+      "n_markets": 80,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "market_adstock_over_halfsat": 0.7864582137439509
+    }
+  }
+}
