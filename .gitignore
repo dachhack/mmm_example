@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+artifacts/
+*.nc
+*.pkl
+node_modules/
+dashboard/dist/
+.ipynb_checkpoints/
+.venv/

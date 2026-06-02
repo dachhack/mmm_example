@@ -1,0 +1,31 @@
+[project]
+name = "draftzone-mmm"
+version = "0.1.0"
+description = "Synthetic Media Mix Modeling with experiment-calibrated, uncertainty-aware recommendations"
+requires-python = ">=3.11"
+dependencies = [
+  "numpy>=1.26",
+  "pandas>=2.0",
+  "scipy>=1.11",
+  "matplotlib>=3.8",
+]
+
+[project.optional-dependencies]
+# heavy fitting deps — installed on the VM, not in the lightweight CI lint job
+fit = [
+  "statsmodels>=0.14",
+  "pymc>=5.10",
+  "arviz>=0.17",
+  "h5netcdf>=1.3",
+]
+dev = ["pytest>=8.0", "ruff>=0.5"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100

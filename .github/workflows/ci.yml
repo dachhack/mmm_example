@@ -1,0 +1,17 @@
+name: CI
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.11" }
+      - name: Install (light deps only — no PyMC sampling in CI)
+        run: |
+          python -m pip install -U pip
+          pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check . || true
+      - name: Run fast tests (incl. no-truth-leak guard)
+        run: pytest -q
