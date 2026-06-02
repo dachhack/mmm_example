@@ -50,6 +50,37 @@ scripts/run_fits.sh       heavy VM pipeline -> produces docs/data/*
 5. Confirm the dashboard shows the recovery scorecard, the per-channel experiment repair, and
    the interactive optimizer with confident/test-first verdicts.
 
+## How the experiment anchoring works (v2)
+The geo-experiment enters the model as a **DiD likelihood**, not a hand-set prior.
+Difference-in-differences recovers each channel's causal lift (within ~7% of truth here),
+and — with the test markets designed to sit near half-saturation — the model predicts that
+lift as `beta_c * (Hill(a_high; half_sat=a_low, slope_c) - 0.5)` using the channel's *own*
+`beta` and `slope`. This pins the channel **ceiling** (`beta`, the one quantity shared between
+market and national scale) with a confound-immune measurement and breaks the `beta`↔`half_sat`
+degeneracy that cripples observational MMM. The market→national translation is still idealized
+(see the limitations) so the anchor SD is widened to reflect that.
+
+## What this run found
+- Dataset: 156 weeks, realized spend↔season confound **0.60**, baseline share **43%**, distinct
+  θ spanning 0.10→0.75; every geo-experiment recovers its true lift within ~7% via DiD.
+- Anchoring cuts per-channel **mean absolute error ~40%** (437 → 261 conversions/wk) and keeps
+  **5/5** channel intervals covering truth, while the predictive interval still covers only ~35%
+  of weeks — the **overconfidence** lesson, preserved and surfaced.
+- ROI: TV's next dollar loses money (mROI ≈ 0.67, saturated); the only robust budget move is to
+  **cut TV**, with affiliate the biggest-but-uncertain upside → test first.
+
+## Run it locally
+```bash
+python -m venv .venv && . .venv/bin/activate
+pip install -e ".[fit,dev]"
+make data            # data/ + data_sealed/ (asserts confound/units/baseline)
+make fit             # baseline Bayesian fit  -> artifacts/idata.nc  (slow; multi-core on a VM)
+make experiments     # rotating geo DiD       -> artifacts/anchors.json
+make anchored        # experiment-anchored fit-> artifacts/idata_anchored.nc
+make evaluate figures # scorecard + docs/data/* contracts
+cd dashboard && npm ci && npm run build   # -> static site in ../docs
+```
+
 ## Status
-Prototype complete (see `docs/PROTOTYPE_FINDINGS.md`). This repo is the productionization:
-new dataset + reproducible pipeline + published interactive findings.
+Productionized: new dataset + reproducible pipeline + interactive dashboard + graded recovery.
+See `docs/PROTOTYPE_FINDINGS.md` for the original prototype this was built from.
