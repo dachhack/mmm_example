@@ -1,5 +1,5 @@
 # DraftZone MMM — pipeline targets. See docs/INFRA.md.
-.PHONY: data fit experiments anchored evaluate figures dashboard notebooks test all clean
+.PHONY: data fit experiments anchored evaluate figures report dashboard notebooks test all clean
 
 data:        ## generate synthetic national + geo data (+ sealed truth)
 	python -m draftzone_mmm.datagen
@@ -18,6 +18,9 @@ evaluate:    ## grade against sealed truth (ONLY step allowed to read data_seale
 
 figures:     ## export dashboard data contracts
 	python -m draftzone_mmm.export_dashboard_data --out docs/data/
+
+report:      ## publish per-run HTML report + rebuild the runs index (docs/runs/). LABEL=seed77
+	python scripts/make_report.py $(if $(LABEL),--label $(LABEL),)
 
 dashboard:   ## build the interactive site
 	cd dashboard && npm ci && npm run build

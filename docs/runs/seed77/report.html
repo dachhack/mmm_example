@@ -1,0 +1,86 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MMM run — seed77</title><style>
+:root{--bg:#0e1116;--panel:#161b22;--ink:#e6edf3;--muted:#9aa7b4;--line:#2a313c;--accent:#4da3ff;--good:#2ca02c;--bad:#d62728;--warn:#d9a200}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px}a{color:var(--accent)}
+header.hero{padding:54px 0 30px;border-bottom:1px solid var(--line);background:radial-gradient(1100px 360px at 50% -90px,#1b2b40 0,transparent 70%)}
+h1{font-size:2rem;margin:0 0 6px}.sub{color:var(--muted);margin:0 0 14px}
+.kicker{text-transform:uppercase;letter-spacing:2px;font-size:.72rem;color:var(--accent);font-weight:700;margin-bottom:8px}
+section{padding:34px 0;border-bottom:1px solid var(--line)}h2{font-size:1.4rem;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:600}
+.hit{color:var(--good);font-weight:700}.miss{color:var(--bad);font-weight:700}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:700}
+.pill.inc{background:rgba(44,160,44,.18);color:#69d36a}.pill.dec{background:rgba(214,39,40,.18);color:#ff6b6b}.pill.test{background:rgba(217,162,0,.18);color:#f0c64b}
+.callout{border-left:3px solid var(--accent);background:#1d2530;padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0}
+.callout.warn{border-left-color:var(--warn)}.callout.good{border-left-color:var(--good)}
+img{max-width:100%;border-radius:8px;border:1px solid var(--line);margin:8px 0}
+.metric{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0}.metric .m b{font-size:1.4rem;display:block}.metric .m span{color:var(--muted);font-size:.78rem}
+.small{font-size:.82rem;color:var(--muted)}footer{padding:36px 0 70px;color:var(--muted);font-size:.85rem}
+.tag{display:inline-block;background:#1d2530;border:1px solid var(--line);border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:.8rem}
+</style></head><body>
+<header class="hero"><div class="wrap">
+<div class="kicker">DraftZone MMM · run report</div>
+<h1>seed77</h1>
+<p class="sub">seed 77 · generated 2026-06-03T15:37:17Z · <a href="../index.html">← all runs</a></p>
+<div><span class="tag">confound: 0.6</span><span class="tag">baseline_share: 43%</span><span class="tag">weeks: 156</span><span class="tag">markets: 80</span></div>
+</div></header>
+<main class="wrap">
+
+<section><h2>TL;DR</h2>
+<div class="card"><div class="metric">
+<div class="m"><b>9% → 15%</b><span>media under-credit (obs → anchored)</span></div>
+<div class="m"><b>84 → 62</b><span>mean abs error / channel</span></div>
+<div class="m"><b>32%</b><span>89% interval coverage (overconfidence)</span></div>
+<div class="m"><b>+2.1%</b><span>max attainable fixed-budget lift</span></div>
+</div>
+<p>On this dataset (confound ρ≈0.6, baseline 43%), the observational
+Bayesian model under-credited media and was overconfident. One randomized geo-experiment per channel
+cut mean per-channel attribution error from <b>84</b> to <b>62</b> conv/wk. The robust
+optimizer's only confident move(s): <b>tv decrease, affiliate increase</b>.
+Under idealized always-on testing the maximum attainable fixed-budget lift was <b>+2.1%</b> — and every channel's marginal ROI at the optimum was below break-even, implying the budget itself is too large (or a deliberate growth bet).</p>
+</div></section>
+
+<section><h2>1 · The modeling ladder</h2>
+<p class="lead">Same data, four tiers. Fit improves; attribution does not — until experiments enter.</p>
+<div class="card"><img src="ladder.png" alt="error by tier">
+<table><thead><tr><th>channel</th><th>true</th><th>naive</th><th>freq</th><th>Bayesian</th><th>anchored</th></tr></thead><tbody><tr><td>tv</td><td>385</td><td>82</td><td>60</td><td>159</td><td>226</td></tr><tr><td>search</td><td>244</td><td>164</td><td>203</td><td>243</td><td>258</td></tr><tr><td>social</td><td>292</td><td>200</td><td>148</td><td>256</td><td>230</td></tr><tr><td>affiliate</td><td>128</td><td>109</td><td>122</td><td>167</td><td>182</td></tr><tr><td>brand</td><td>84</td><td>92</td><td>262</td><td>203</td><td>63</td></tr></tbody></table>
+<p class="small">Per-channel avg contribution (conv/wk) vs the sealed truth, across tiers.</p></div></section>
+
+<section><h2>2 · Experiment repair</h2>
+<p class="lead">Confound-immune geo anchors slide the estimate toward truth and tighten the intervals.</p>
+<div class="card"><img src="repair.png" alt="repair before/after">
+<table><thead><tr><th>channel</th><th>true</th><th>anchored est</th><th>89% CI</th><th>covers truth?</th></tr></thead><tbody><tr><td>tv</td><td>385</td><td>226</td><td>[89, 401]</td><td><span class="hit">HIT</span></td></tr><tr><td>search</td><td>244</td><td>258</td><td>[129, 415]</td><td><span class="hit">HIT</span></td></tr><tr><td>social</td><td>292</td><td>230</td><td>[121, 369]</td><td><span class="hit">HIT</span></td></tr><tr><td>affiliate</td><td>128</td><td>182</td><td>[90, 299]</td><td><span class="hit">HIT</span></td></tr><tr><td>brand</td><td>84</td><td>63</td><td>[22, 130]</td><td><span class="hit">HIT</span></td></tr></tbody></table>
+</div></section>
+
+<section><h2>3 · ROI — average vs marginal</h2>
+<p class="lead">Average flatters; the next dollar (marginal) decides. Graded against true marginal ROI.</p>
+<div class="card"><img src="roi.png" alt="roi">
+<table><thead><tr><th>channel</th><th>avg ROI (est)</th><th>marginal ROI (est)</th><th>marginal TRUE</th></tr></thead><tbody><tr><td>tv</td><td>1.52 <span class='small'>[0.6,2.7]</span></td><td>0.79 <span class='small'>[0.5,1.0]</span></td><td>0.32</td></tr><tr><td>search</td><td>3.42 <span class='small'>[1.7,5.7]</span></td><td>1.72 <span class='small'>[1.1,2.3]</span></td><td>1.06</td></tr><tr><td>social</td><td>2.20 <span class='small'>[1.1,3.6]</span></td><td>1.05 <span class='small'>[0.7,1.4]</span></td><td>0.65</td></tr><tr><td>affiliate</td><td>6.46 <span class='small'>[3.3,10.9]</span></td><td>2.80 <span class='small'>[1.9,3.8]</span></td><td>1.87</td></tr><tr><td>brand</td><td>2.29 <span class='small'>[0.8,4.7]</span></td><td>0.96 <span class='small'>[0.5,1.4]</span></td><td>1.14</td></tr></tbody></table>
+<p class="small">Blended LTV $220. Estimated marginal ROI tends to run optimistic vs truth.</p></div></section>
+
+<section><h2>4 · Robust budget verdicts</h2>
+<p class="lead">Point estimate promised +3.3%; across uncertainty only moves whose interval clears the dead-band are confident.</p>
+<div class="card"><table><thead><tr><th>channel</th><th>median Δ</th><th>89% CI</th><th>verdict</th></tr></thead><tbody><tr><td>tv</td><td>-11%</td><td>[-28%, -5%]</td><td><span class="pill dec">DECREASE</span></td></tr><tr><td>search</td><td>+11%</td><td>[-6%, +41%]</td><td><span class="pill test">TEST FIRST</span></td></tr><tr><td>social</td><td>-10%</td><td>[-22%, -2%]</td><td><span class="pill test">TEST FIRST</span></td></tr><tr><td>affiliate</td><td>+111%</td><td>[+62%, +185%]</td><td><span class="pill inc">INCREASE</span></td></tr><tr><td>brand</td><td>-39%</td><td>[-66%, +7%]</td><td><span class="pill test">TEST FIRST</span></td></tr></tbody></table></div></section>
+
+<section><h2>5 · Idealized long-run test-and-learn</h2>
+<p class="lead">Unbiased experiments, no drift: iterate small steps, re-measure, converge.</p>
+<div class="card"><img src="tnl.png" alt="test and learn">
+<p class="small">Max attainable fixed-budget lift <b>+2.1%</b>; high-volume testing captures essentially
+all of it, noisy testing leaves some on the table. Marginal ROIs compress toward equalization — the optimality condition.</p></div></section>
+
+<section><h2>What we learned</h2><div class="card">
+<ol>
+<li>Good fit ≠ good attribution. R² rose across tiers while the decomposition stayed wrong until experiments entered.</li>
+<li>The confound biases observational MMM; priors bound the damage but don't cure it (see the channel the model still misses).</li>
+<li>Experiments repair the worst of it — but a <b>biased anchor injects its own error</b>, and robustness-across-uncertainty does not catch anchor bias.</li>
+<li>Average ROI is a trap; marginal ROI drives decisions — and estimated marginal ROI runs optimistic.</li>
+<li>The attainable fixed-budget lift is small (+2.1%); the real program is steady small moves + continuous re-testing, not a one-time jump.</li>
+</ol></div></section>
+
+</main>
+<footer class="wrap">Synthetic data, graded against a sealed answer key. Reports are precomputed by
+<code>scripts/make_report.py</code>. <a href="../index.html">All runs →</a></footer>
+</body></html>
