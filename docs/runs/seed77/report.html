@@ -31,7 +31,7 @@ img{max-width:100%;border-radius:8px;border:1px solid var(--line);margin:8px 0}
 <header class="hero"><div class="wrap">
 <div class="kicker">DraftZone MMM · run report</div>
 <h1>seed77</h1>
-<p class="sub">seed 77 · generated 2026-06-03T15:46:16Z · <a href="../index.html">← all runs</a></p>
+<p class="sub">seed 77 · generated 2026-06-03T16:07:27Z · <a href="../index.html">← all runs</a></p>
 <div><span class="tag">confound: 0.6</span><span class="tag">baseline_share: 43%</span><span class="tag">weeks: 156</span><span class="tag">markets: 80</span></div>
 </div></header>
 <main class="wrap">
@@ -79,6 +79,22 @@ Under idealized always-on testing the maximum attainable fixed-budget lift was <
 <p>Reaching <b>90%</b> of the attainable gain took ≈<b>1</b> rounds (high-volume testing) / ≈2 (noisy). At one experiment cycle per quarter (~13 wks, run in parallel across channels) that's ≈<b>13 weeks (≈0.2 yrs)</b> — or ~26 wks if tests are noisy; testing one channel at a time instead of in parallel would be roughly 5× longer. This is the <i>no-drift</i> ideal — with drift the optimum keeps moving, so you never fully arrive, you perpetually pursue.</p>
 <p class="small">Max attainable fixed-budget lift <b>+2.1%</b>; high-volume testing captures essentially
 all of it, noisy testing leaves some on the table. Marginal ROIs compress toward equalization — the optimality condition.</p></div></section>
+
+<section><h2>6 · Choosing the next experiment (active design)</h2>
+<p class="lead">Testing is scarce, slow and costly — so <i>which</i> channel you test next is itself an optimization.
+With one geo-test per round, a Value-of-Information policy (test where you're uncertain × near a decision
+boundary × the most dollars at stake) beats blind round-robin and random.</p>
+<div class="card"><img src="selection.png" alt="experiment selection policies">
+<p>To capture <b>90%</b> of the attainable gain: smart selection needed ≈<b>6</b> experiments,
+round-robin ≈<b>7</b>, random ≈<b>16</b> — the smart policy reaches the target with about
+<b>12%</b> fewer tests than the rotating calendar (≈83 vs
+95 weeks at a quarter per test). The agent holds an uncertainty over each
+channel's marginal ROI, sharpens it by testing, lets it go stale as spend moves, and reallocates cautiously
+(damped by what it doesn't know).</p>
+<div class="callout warn"><b>The honest limit:</b> VOI is computed from the model's <i>own</i> uncertainty, so it
+is blind to <i>bias</i> the model doesn't know it has — a confidently-wrong anchor (like affiliate earlier)
+won't be flagged for re-testing. A smart program therefore keeps an <b>exploration floor</b>: re-validate even
+"settled" channels on a cadence to catch drift and bias the uncertainty can't see.</div></div></section>
 
 <section><h2>What we learned</h2><div class="card">
 <ol>

@@ -16,6 +16,7 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
+import math
 import pathlib
 import re
 
@@ -60,9 +61,12 @@ def true_roi(df, gt):
     return out
 
 
-def simulate_test_and_learn(df, gt, rounds=30, eta=0.5):
+def _true_env(df, gt):
+    """Shared ground-truth environment: response curves, current allocation, and the true
+    fixed-budget optimum. Used by every test-and-learn simulation so they agree."""
+    from scipy.optimize import minimize
     imp = {c: df[f"{c}_impressions"].to_numpy(float) for c in CHANNELS}
-    cur = {c: df[f"{c}_spend"].sum() for c in CHANNELS}
+    cur = {c: float(df[f"{c}_spend"].sum()) for c in CHANNELS}
     budget = sum(cur.values())
     P = {c: gt["channels"][c] for c in CHANNELS}
 
@@ -79,7 +83,6 @@ def simulate_test_and_learn(df, gt, rounds=30, eta=0.5):
         d = spend * 0.01
         return (out_c(c, spend + d) - out_c(c, spend)) * revenue.LTV_MU / d
 
-    from scipy.optimize import minimize
     lo, hi = 0.2, 5.0
     x0 = np.array([cur[c] for c in CHANNELS])
     cons = [{"type": "eq", "fun": lambda x: x.sum() - budget}]
@@ -94,6 +97,17 @@ def simulate_test_and_learn(df, gt, rounds=30, eta=0.5):
         if best is None or r.fun < best.fun:
             best = r
     opt = {c: float(best.x[i]) for i, c in enumerate(CHANNELS)}
+    return dict(cur=cur, budget=budget, opt=opt, lo=lo, hi=hi,
+                out_c=out_c, total=total, mroi=mroi,
+                cur_out=total(cur), opt_out=total(opt),
+                opt_mroi={c: mroi(c, opt[c]) for c in CHANNELS})
+
+
+def simulate_test_and_learn(df, gt, rounds=30, eta=0.5, env=None):
+    """Idealized program that re-measures EVERY channel each round (unlimited test capacity)."""
+    env = env or _true_env(df, gt)
+    cur, budget, total, mroi = env["cur"], env["budget"], env["total"], env["mroi"]
+    lo, hi = env["lo"], env["hi"]
 
     def run(sigma, seed=1):
         rng = np.random.default_rng(seed)
@@ -112,9 +126,85 @@ def simulate_test_and_learn(df, gt, rounds=30, eta=0.5):
             mrois.append({c: mroi(c, a[c]) for c in CHANNELS})
         return outs, allocs, mrois
 
-    return dict(cur=cur, opt=opt, budget=budget, cur_out=total(cur), opt_out=total(opt),
-                opt_mroi={c: mroi(c, opt[c]) for c in CHANNELS},
-                low=run(0.10), high=run(0.40))
+    out = dict(cur=cur, opt=env["opt"], budget=budget, cur_out=env["cur_out"],
+               opt_out=env["opt_out"], opt_mroi=env["opt_mroi"], low=run(0.10), high=run(0.40))
+    return out
+
+
+def simulate_selection_policies(df, gt, rounds=40, seeds=24, sigma=0.15, eta=0.5,
+                                drift=0.015, move_pen=2.0, lam=3.0, env=None):
+    """Limited testing capacity: ONE geo-test per round. Compare which channel to test next under
+    three policies — round-robin, random, and smart (Value-of-Information). The agent holds a
+    Gaussian belief over each channel's marginal ROI; a test sharpens that channel's belief toward
+    a noisy-but-unbiased measurement; beliefs go stale over time and when spend is moved without
+    re-testing. Reallocation is damped by uncertainty. Returns mean %-of-attainable-gain trajectory
+    per policy and the mean number of experiments to reach 90%."""
+    env = env or _true_env(df, gt)
+    cur, budget = env["cur"], env["budget"]
+    total, mroi, lo, hi = env["total"], env["mroi"], env["lo"], env["hi"]
+    cur_out, opt_out = env["cur_out"], env["opt_out"]
+    n = len(CHANNELS)
+
+    def voi_pick(m, v, alloc, rng):
+        mbar = float(np.mean(list(m.values())))
+        best_c, best_s = None, -1.0
+        for c in CHANNELS:
+            sd = np.sqrt(v[c])
+            z = abs(m[c] - mbar) / (sd + 1e-9)
+            flip = math.erfc(z / np.sqrt(2))          # P(test could flip the decision)
+            s = flip * (alloc[c] / budget)            # x dollars governed by the decision
+            if s > best_s:
+                best_c, best_s = c, s
+        return best_c
+
+    def run_policy(policy):
+        gains_all, exp90 = [], []
+        for seed in range(seeds):
+            rng = np.random.default_rng(2000 + seed)
+            alloc = dict(cur)
+            m = {c: 1.0 for c in CHANNELS}
+            v = {c: 0.6 ** 2 for c in CHANNELS}
+            last = {c: alloc[c] for c in CHANNELS}
+            gains = [0.0]
+            reached, rr = None, 0
+            for r in range(rounds):
+                if policy == "roundrobin":
+                    j = CHANNELS[rr % n]
+                    rr += 1
+                elif policy == "random":
+                    j = CHANNELS[int(rng.integers(n))]
+                else:
+                    j = voi_pick(m, v, alloc, rng)
+                # measure channel j (unbiased, noisy) and Bayesian-update its belief
+                y = mroi(j, alloc[j]) * (1 + rng.normal(0, sigma))
+                s2 = (sigma * max(abs(y), 0.3)) ** 2
+                vn = 1.0 / (1.0 / v[j] + 1.0 / s2)
+                m[j] = vn * (m[j] / v[j] + y / s2)
+                v[j] = vn
+                last[j] = alloc[j]
+                # staleness: drift + penalty for having moved spend since last test
+                for c in CHANNELS:
+                    v[c] += drift + move_pen * (abs(alloc[c] - last[c]) / max(cur[c], 1)) ** 2
+                # reallocate, damped by uncertainty (don't bet big on what you're unsure of)
+                mbar = float(np.mean(list(m.values())))
+                raw = {c: alloc[c] * np.exp(eta * (m[c] - mbar) / (1 + lam * v[c])) for c in CHANNELS}
+                ssum = sum(raw.values())
+                alloc = {c: float(np.clip(raw[c] / ssum * budget, cur[c] * lo, cur[c] * hi)) for c in CHANNELS}
+                ssum = sum(alloc.values())
+                alloc = {c: alloc[c] / ssum * budget for c in CHANNELS}
+                g = 100 * (total(alloc) - cur_out) / (opt_out - cur_out + 1e-9)
+                gains.append(g)
+                if reached is None and g >= 90:
+                    reached = r + 1
+            gains_all.append(gains)
+            exp90.append(reached if reached is not None else rounds)
+        return np.mean(gains_all, axis=0), float(np.mean(exp90))
+
+    policies = {}
+    for name in ("smart", "roundrobin", "random"):
+        traj, e90 = run_policy(name)
+        policies[name] = dict(trajectory=traj.tolist(), exp_to_90=e90)
+    return policies
 
 
 def rounds_to(outs, cur_out, opt_out, thresh=0.90):
@@ -142,6 +232,27 @@ def convergence_estimate(sim, weeks_per_cycle=13, thresh=0.90):
 
 
 # ---------------------------------------------------------------- figures
+def fig_selection(path, policies):
+    styles = {"smart": ("#2ca02c", "smart (Value-of-Information)"),
+              "roundrobin": ("#1f77b4", "round-robin (rotating calendar)"),
+              "random": ("#888", "random")}
+    fig, ax = plt.subplots(figsize=(7.5, 4))
+    for name, (col, lbl) in styles.items():
+        traj = policies[name]["trajectory"]
+        e90 = policies[name]["exp_to_90"]
+        ax.plot(range(len(traj)), traj, color=col, lw=2 if name == "smart" else 1.6,
+                label=f"{lbl}  (≈{e90:.0f} tests→90%)")
+    ax.axhline(90, ls=":", color="#bbb")
+    ax.set_title("Choosing the next experiment: one test/round, which channel?")
+    ax.set_xlabel("experiments run (1 geo-test per round)")
+    ax.set_ylabel("% of attainable gain captured")
+    ax.legend(fontsize=8)
+    ax.grid(alpha=0.3)
+    fig.tight_layout()
+    fig.savefig(path, dpi=120, bbox_inches="tight")
+    plt.close(fig)
+
+
 def fig_ladder(path, naive, freq, before, after, truth):
     tiers = ["naive\n(OLS)", "frequentist\n(NLS)", "Bayesian\n(observational)", "anchored\n(+experiments)"]
     maes = []
@@ -287,7 +398,7 @@ def _verdict_pill(v):
     return f'<span class="pill {cls}">{v}</span>'
 
 
-def build_report_html(meta, before, after, truth, naive, freq, roi, troi, optim, sim, conv):
+def build_report_html(meta, before, after, truth, naive, freq, roi, troi, optim, sim, conv, policies):
     gtd = truth
     chans = CHANNELS
     mae_b = np.mean([abs(before[c][0] - gtd[c]) for c in chans])
@@ -322,6 +433,10 @@ def build_report_html(meta, before, after, truth, naive, freq, roi, troi, optim,
     else:
         conv_sentence = ("The high-volume trajectory did not reach the threshold within the "
                          "simulated horizon.")
+    e_smart = policies["smart"]["exp_to_90"]
+    e_rr = policies["roundrobin"]["exp_to_90"]
+    e_rand = policies["random"]["exp_to_90"]
+    sel_save = f"{(1 - e_smart / e_rr) * 100:.0f}%" if e_rr else "—"
 
     # ladder table rows
     ladder_rows = []
@@ -407,6 +522,22 @@ Under idealized always-on testing the maximum attainable fixed-budget lift was <
 <p class="small">Max attainable fixed-budget lift <b>+{attain:.1f}%</b>; high-volume testing captures essentially
 all of it, noisy testing leaves some on the table. Marginal ROIs compress toward equalization — the optimality condition.</p></div></section>
 
+<section><h2>6 · Choosing the next experiment (active design)</h2>
+<p class="lead">Testing is scarce, slow and costly — so <i>which</i> channel you test next is itself an optimization.
+With one geo-test per round, a Value-of-Information policy (test where you're uncertain × near a decision
+boundary × the most dollars at stake) beats blind round-robin and random.</p>
+<div class="card"><img src="selection.png" alt="experiment selection policies">
+<p>To capture <b>90%</b> of the attainable gain: smart selection needed ≈<b>{e_smart:.0f}</b> experiments,
+round-robin ≈<b>{e_rr:.0f}</b>, random ≈<b>{e_rand:.0f}</b> — the smart policy reaches the target with about
+<b>{sel_save}</b> fewer tests than the rotating calendar (≈{e_smart*conv['weeks_per_cycle']:.0f} vs
+{e_rr*conv['weeks_per_cycle']:.0f} weeks at a quarter per test). The agent holds an uncertainty over each
+channel's marginal ROI, sharpens it by testing, lets it go stale as spend moves, and reallocates cautiously
+(damped by what it doesn't know).</p>
+<div class="callout warn"><b>The honest limit:</b> VOI is computed from the model's <i>own</i> uncertainty, so it
+is blind to <i>bias</i> the model doesn't know it has — a confidently-wrong anchor (like affiliate earlier)
+won't be flagged for re-testing. A smart program therefore keeps an <b>exploration floor</b>: re-validate even
+"settled" channels on a cadence to catch drift and bias the uncertainty can't see.</div></div></section>
+
 <section><h2>What we learned</h2><div class="card">
 <ol>
 <li>Good fit ≠ good attribution. R² rose across tiers while the decomposition stayed wrong until experiments entered.</li>
@@ -434,12 +565,14 @@ def build_index_html(manifest):
             f'{r["pp_coverage"]:.0f}%',
             f'+{r["attainable_lift"]:.1f}%',
             (f'~{r["weeks_to_converge"]} wk' if r.get("weeks_to_converge") is not None else "—"),
+            (f'{r["exp90_smart"]:.0f} / {r["exp90_roundrobin"]:.0f}'
+             if r.get("exp90_smart") is not None else "—"),
             r.get("robust_moves") or "—",
             r["timestamp"][:16].replace("T", " "),
         ])
     table = _tbl(["run", "seed", "confound", "baseline", "MAE obs→anch",
                   "media under-credit", "interval cov.", "attainable lift",
-                  "≈time to 90%", "robust move(s)", "generated"], rows)
+                  "≈time to 90%", "tests→90% smart/RR", "robust move(s)", "generated"], rows)
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DraftZone MMM — run tracker</title><style>{CSS}</style></head><body>
@@ -458,7 +591,8 @@ can actually attain. Open a run for the full report. <a href="../index.html">Int
 (lower is better). "interval cov." is what % of weeks the nominal 89% predictive band actually covers
 (≪89% = overconfident). "attainable lift" is the max fixed-budget conversion gain under perfect test-and-learn.
 "≈time to 90%" estimates the calendar weeks to capture 90% of that gain (one experiment cycle ≈ a quarter, run
-in parallel; no-drift idealization — with drift you never fully arrive).</p>
+in parallel; no-drift idealization — with drift you never fully arrive). "tests→90% smart/RR" is how many
+single-channel experiments a Value-of-Information selection policy needs vs. blind round-robin to reach 90%.</p>
 </section></main>
 <footer class="wrap">Generated by <code>scripts/make_report.py</code>.</footer>
 </body></html>"""
@@ -500,8 +634,11 @@ def main():
     optim = optimize.optimize_budget(anch_path, n_draws=120)
 
     print("Test-and-learn simulation...")
-    sim = simulate_test_and_learn(df, gt)
+    env = _true_env(df, gt)
+    sim = simulate_test_and_learn(df, gt, env=env)
     conv = convergence_estimate(sim, weeks_per_cycle=args.weeks_per_cycle)
+    print("Experiment-selection policies (smart vs round-robin vs random)...")
+    policies = simulate_selection_policies(df, gt, env=env)
 
     rundir = RUNS_DIR / run_id
     rundir.mkdir(parents=True, exist_ok=True)
@@ -510,6 +647,7 @@ def main():
     fig_repair(rundir / "repair.png", before, after, gtd)
     fig_roi(rundir / "roi.png", roi, troi)
     fig_tnl(rundir / "tnl.png", sim, conv)
+    fig_selection(rundir / "selection.png", policies)
 
     meta = dict(
         id=run_id, label=label, seed=seed,
@@ -519,7 +657,7 @@ def main():
                          baseline_share=f"{gt['avg_contribution_decomposition']['baseline']/df['conversions'].mean():.0%}",
                          weeks=cfg["n_weeks"], markets=cfg["n_markets"]),
     )
-    html = build_report_html(meta, before, after, gtd, naive, freq, roi, troi, optim, sim, conv)
+    html = build_report_html(meta, before, after, gtd, naive, freq, roi, troi, optim, sim, conv, policies)
     (rundir / "report.html").write_text(html, encoding="utf-8")
 
     # manifest upsert
@@ -543,6 +681,8 @@ def main():
         weeks_to_converge=conv["weeks_low"],
         rounds_to_converge=conv["rounds_low"],
         weeks_per_cycle=conv["weeks_per_cycle"],
+        exp90_smart=policies["smart"]["exp_to_90"],
+        exp90_roundrobin=policies["roundrobin"]["exp_to_90"],
         robust_moves=robust,
     ))
     manifest.sort(key=lambda r: r["timestamp"], reverse=True)
