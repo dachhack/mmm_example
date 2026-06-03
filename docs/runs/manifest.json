@@ -1,12 +1,13 @@
 [
   {
-    "id": "prizepicks",
-    "label": "prizepicks",
+    "id": "stable_saturation",
+    "label": "stable_saturation",
     "seed": 77,
-    "timestamp": "2026-06-03T16:31:08Z",
+    "timestamp": "2026-06-03T16:40:33Z",
     "assumptions": {
       "confound": 0.6,
       "baseline_share": "46%",
+      "saturation": "stable",
       "weeks": 156,
       "markets": 80
     },

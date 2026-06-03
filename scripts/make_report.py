@@ -46,14 +46,25 @@ def _resolve(p):
 
 
 # ---------------------------------------------------------------- truth-graded ROI + sim
+def _hs_true(gt, c):
+    """True half-sat for channel c — a scalar, or a per-week array if saturation is seasonal."""
+    base = gt["channels"][c]["half_sat"]
+    meta = gt["meta"]
+    if meta.get("seasonal_saturation") and meta.get("season_norm"):
+        sn = np.asarray(meta["season_norm"])
+        return base * (1 - meta["sat_seasonal_amp"] * sn)
+    return base
+
+
 def true_roi(df, gt):
     out = {}
     for c in CHANNELS:
         p = gt["channels"][c]
+        hs = _hs_true(gt, c)
         imp = df[f"{c}_impressions"].to_numpy(float)
         spend = df[f"{c}_spend"].sum()
-        contrib = p["beta"] * hill_saturation(geometric_adstock(imp, p["theta"]), p["half_sat"], p["slope"])
-        contrib2 = p["beta"] * hill_saturation(geometric_adstock(imp * 1.01, p["theta"]), p["half_sat"], p["slope"])
+        contrib = p["beta"] * hill_saturation(geometric_adstock(imp, p["theta"]), hs, p["slope"])
+        contrib2 = p["beta"] * hill_saturation(geometric_adstock(imp * 1.01, p["theta"]), hs, p["slope"])
         avg = contrib.sum() * revenue.LTV_MU / spend
         mar = (contrib2 - contrib).sum() * revenue.LTV_MU / (spend * 0.01)
         out[c] = (float(avg), float(mar))
@@ -68,12 +79,13 @@ def _true_env(df, gt):
     cur = {c: float(df[f"{c}_spend"].sum()) for c in CHANNELS}
     budget = sum(cur.values())
     P = {c: gt["channels"][c] for c in CHANNELS}
+    HS = {c: _hs_true(gt, c) for c in CHANNELS}  # scalar or per-week array (seasonal saturation)
 
     def out_c(c, spend):
         k = spend / cur[c]
         p = P[c]
         return float((p["beta"] * hill_saturation(geometric_adstock(imp[c] * k, p["theta"]),
-                                                   p["half_sat"], p["slope"])).sum())
+                                                   HS[c], p["slope"])).sum())
 
     def total(a):
         return sum(out_c(c, a[c]) for c in CHANNELS)
@@ -657,6 +669,7 @@ def main():
         pp_coverage=sc_a["fit"]["pp_interval_coverage"],
         assumptions=dict(confound=round(cfg["realized_confound"], 2),
                          baseline_share=f"{gt['avg_contribution_decomposition']['baseline']/df['conversions'].mean():.0%}",
+                         saturation=("seasonal" if gt["meta"].get("seasonal_saturation") else "stable"),
                          weeks=cfg["n_weeks"], markets=cfg["n_markets"]),
     )
     html = build_report_html(meta, before, after, gtd, naive, freq, roi, troi, optim, sim, conv, policies)

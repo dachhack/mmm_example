@@ -36,7 +36,7 @@ SEALED_DIR = REPO / "data_sealed"
 CHANNELS = ["paid_social", "paid_search", "programmatic_display", "influencer", "dooh", "tv_ctv"]
 
 # ----------------------------------------------------------------------
-# TRUE per-channel parameters (the sealed truth) — a PrizePicks-style mix.
+# TRUE per-channel parameters (the sealed truth) — a realistic DFS marketing mix.
 # Deliberately DISTINCT so recovery is a genuine test: theta spans 0.10 -> 0.75.
 # hs/slope live on the IMPRESSION-adstock scale. beta = max conversions/wk.
 # Saturation is set via hs RELATIVE to each channel's impression level:
@@ -99,6 +99,12 @@ GEO_DESIGN = {
 TARGET_CONFOUND = 0.60
 N_MARKETS = 80
 T_NATIONAL = 156
+
+# Optional modifier: time-varying saturation. Spend is paced to the sports calendar, so during
+# the NFL peak every channel is flooded and sits HIGHER on its Hill curve (effective half-sat
+# drops). At the seasonal peak half_sat is reduced by SAT_SEASONAL_AMP. The MMM assumes a CONSTANT
+# half-sat, so turning this on makes the model misspecified — a stress test for the experiments.
+SAT_SEASONAL_AMP = 0.35
 
 
 # ----------------------------------------------------------------------
@@ -173,13 +179,20 @@ def _tune_confound(expected_demand, seasonality, seeds, T, target=TARGET_CONFOUN
     return best
 
 
-def generate_national(seed=2024):
-    """Generate the national weekly dataset and the national portion of the truth."""
+def generate_national(seed=2024, seasonal_saturation=False):
+    """Generate the national weekly dataset and the national portion of the truth.
+
+    If ``seasonal_saturation`` is True, each channel's half-sat shrinks at the seasonal peak
+    (channels are more saturated when everyone floods them) — a time-varying response the
+    constant-half-sat MMM cannot represent.
+    """
     rng = np.random.default_rng(seed)
     week_idx = np.arange(T_NATIONAL)
     dates = pd.date_range("2023-01-01", periods=T_NATIONAL, freq="W-SUN")
     ctrl = _national_controls(week_idx)
     seasonality = ctrl["seasonality"]
+    # season in [0,1], 1 at the NFL peak — drives the time-varying half-sat
+    season_norm = (seasonality - seasonality.min()) / (seasonality.max() - seasonality.min())
 
     competitor_pressure = np.clip(
         50 + 30 * np.sin(2 * np.pi * week_idx / 26 + 1.0) + rng.normal(0, 8, T_NATIONAL),
@@ -211,7 +224,8 @@ def generate_national(seed=2024):
         impressions = np.clip(imp_mean * rng.normal(1.0, p["noise"], T_NATIONAL), 0, None)
 
         ad = geometric_adstock(impressions, p["theta"])
-        sat = hill_saturation(ad, p["hs"], p["slope"])
+        hs_t = p["hs"] * (1 - SAT_SEASONAL_AMP * season_norm) if seasonal_saturation else p["hs"]
+        sat = hill_saturation(ad, hs_t, p["slope"])
         contrib = p["beta"] * sat
 
         data[f"{name}_spend"] = spend
@@ -262,6 +276,9 @@ def generate_national(seed=2024):
             promo_effect=PROMO_EFFECT, price_coef=PRICE_COEF, comp_coef=COMP_COEF,
             holiday_effect=HOLIDAY_EFFECT, target_corr_spend_season=TARGET_CONFOUND,
             realized_corr_totalspend_season=realized_corr, season_scale=float(season_scale),
+            seasonal_saturation=bool(seasonal_saturation),
+            sat_seasonal_amp=float(SAT_SEASONAL_AMP) if seasonal_saturation else 0.0,
+            season_norm=season_norm.tolist() if seasonal_saturation else None,
         ),
         channels=channels_truth,
         avg_contribution_decomposition=decomp,
@@ -358,6 +375,8 @@ def main():
     ap.add_argument("--seed", type=int, default=2024)
     ap.add_argument("--data-dir", default=str(DATA_DIR))
     ap.add_argument("--sealed-dir", default=str(SEALED_DIR))
+    ap.add_argument("--seasonal-saturation", action="store_true",
+                    help="time-varying saturation (channels more saturated at the NFL peak)")
     args = ap.parse_args()
 
     data_dir = pathlib.Path(args.data_dir)
@@ -365,7 +384,7 @@ def main():
     data_dir.mkdir(parents=True, exist_ok=True)
     sealed_dir.mkdir(parents=True, exist_ok=True)
 
-    nat_df, truth = generate_national(seed=args.seed)
+    nat_df, truth = generate_national(seed=args.seed, seasonal_saturation=args.seasonal_saturation)
     geo_df, exp_truth, assignments = generate_geo_experiments(seed=args.seed // 2 + 808)
     truth["experiments"] = exp_truth
 
@@ -381,6 +400,7 @@ def main():
         geo_calendar=GEO_CALENDAR,
         n_markets=N_MARKETS,
         geo_assignments=assignments,
+        seasonal_saturation=bool(args.seasonal_saturation),
         note="Public config — contains NO true model parameters (see data_sealed/ for truth).",
     )
     with open(data_dir / "config.json", "w") as f:
