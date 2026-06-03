@@ -179,12 +179,16 @@ def _tune_confound(expected_demand, seasonality, seeds, T, target=TARGET_CONFOUN
     return best
 
 
-def generate_national(seed=2024, seasonal_saturation=False):
+def generate_national(seed=2024, seasonal_saturation=False, saturation_scale=1.0):
     """Generate the national weekly dataset and the national portion of the truth.
 
-    If ``seasonal_saturation`` is True, each channel's half-sat shrinks at the seasonal peak
-    (channels are more saturated when everyone floods them) — a time-varying response the
-    constant-half-sat MMM cannot represent.
+    ``saturation_scale`` multiplies every channel's half-sat: >1 pushes channels LOWER on their
+    Hill curves (less saturated, more headroom — a fast-growing advertiser); <1 saturates them.
+    Beta (the shared ceiling) is unchanged, so the geo experiments stay consistent.
+
+    If ``seasonal_saturation`` is True, half-sat also shrinks at the seasonal peak (channels more
+    saturated when everyone floods them) — a time-varying response the constant-half-sat MMM
+    cannot represent.
     """
     rng = np.random.default_rng(seed)
     week_idx = np.arange(T_NATIONAL)
@@ -224,7 +228,8 @@ def generate_national(seed=2024, seasonal_saturation=False):
         impressions = np.clip(imp_mean * rng.normal(1.0, p["noise"], T_NATIONAL), 0, None)
 
         ad = geometric_adstock(impressions, p["theta"])
-        hs_t = p["hs"] * (1 - SAT_SEASONAL_AMP * season_norm) if seasonal_saturation else p["hs"]
+        hs_base = p["hs"] * saturation_scale
+        hs_t = hs_base * (1 - SAT_SEASONAL_AMP * season_norm) if seasonal_saturation else hs_base
         sat = hill_saturation(ad, hs_t, p["slope"])
         contrib = p["beta"] * sat
 
@@ -233,7 +238,7 @@ def generate_national(seed=2024, seasonal_saturation=False):
         channel_contribs[name] = contrib
         spends.append(spend)
         channels_truth[name] = dict(
-            theta=p["theta"], half_sat=float(p["hs"]), slope=p["slope"], beta=float(p["beta"]),
+            theta=p["theta"], half_sat=float(hs_base), slope=p["slope"], beta=float(p["beta"]),
             imp_per_dollar=p["imp_per_dollar"], mean_spend=float(spend.mean()),
             mean_contrib=float(contrib.mean()),
         )
@@ -377,6 +382,8 @@ def main():
     ap.add_argument("--sealed-dir", default=str(SEALED_DIR))
     ap.add_argument("--seasonal-saturation", action="store_true",
                     help="time-varying saturation (channels more saturated at the NFL peak)")
+    ap.add_argument("--saturation-scale", type=float, default=1.0,
+                    help=">1 = less saturated / more headroom; <1 = more saturated")
     args = ap.parse_args()
 
     data_dir = pathlib.Path(args.data_dir)
@@ -384,7 +391,8 @@ def main():
     data_dir.mkdir(parents=True, exist_ok=True)
     sealed_dir.mkdir(parents=True, exist_ok=True)
 
-    nat_df, truth = generate_national(seed=args.seed, seasonal_saturation=args.seasonal_saturation)
+    nat_df, truth = generate_national(seed=args.seed, seasonal_saturation=args.seasonal_saturation,
+                                      saturation_scale=args.saturation_scale)
     geo_df, exp_truth, assignments = generate_geo_experiments(seed=args.seed // 2 + 808)
     truth["experiments"] = exp_truth
 
@@ -401,6 +409,7 @@ def main():
         n_markets=N_MARKETS,
         geo_assignments=assignments,
         seasonal_saturation=bool(args.seasonal_saturation),
+        saturation_scale=float(args.saturation_scale),
         note="Public config — contains NO true model parameters (see data_sealed/ for truth).",
     )
     with open(data_dir / "config.json", "w") as f:
