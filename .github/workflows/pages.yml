@@ -18,10 +18,8 @@ jobs:
             echo "::error::docs/data/ is empty. Run scripts/run_fits.sh on the VM first (see docs/INFRA.md)."
             exit 1
           fi
-      # Enable Pages for the repo (source: Actions) on first run. Works now that the repo is
-      # public; on a private Free-plan repo Pages is unavailable and this step fails.
-      - uses: actions/configure-pages@v5
-        with: { enablement: true }
+      # One-time setup: enable Pages in repo Settings -> Pages -> Source: "GitHub Actions".
+      # (The Actions GITHUB_TOKEN is not permitted to create the Pages site itself.)
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
       - name: Build dashboard
