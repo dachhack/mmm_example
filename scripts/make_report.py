@@ -16,7 +16,6 @@ from __future__ import annotations
 import argparse
 import datetime as dt
 import json
-import math
 import pathlib
 import re
 
@@ -132,27 +131,29 @@ def simulate_test_and_learn(df, gt, rounds=30, eta=0.5, env=None):
 
 
 def simulate_selection_policies(df, gt, rounds=40, seeds=24, sigma=0.15, eta=0.5,
-                                drift=0.015, move_pen=2.0, lam=3.0, env=None):
+                                drift=0.015, move_pen=2.0, lam=3.0, env=None, init_m=None):
     """Limited testing capacity: ONE geo-test per round. Compare which channel to test next under
-    three policies — round-robin, random, and smart (Value-of-Information). The agent holds a
-    Gaussian belief over each channel's marginal ROI; a test sharpens that channel's belief toward
-    a noisy-but-unbiased measurement; beliefs go stale over time and when spend is moved without
-    re-testing. Reallocation is damped by uncertainty. Returns mean %-of-attainable-gain trajectory
-    per policy and the mean number of experiments to reach 90%."""
+    three policies — round-robin, random, and smart (Value-of-Information). The agent starts from
+    the model's (biased) marginal-ROI beliefs and refines them: a test sharpens that channel's
+    belief toward a noisy-but-unbiased measurement; beliefs go stale over time and when spend is
+    moved without re-testing. Reallocation is damped by uncertainty. Returns mean %-of-attainable-
+    gain trajectory per policy and the mean number of experiments to reach 90%."""
     env = env or _true_env(df, gt)
     cur, budget = env["cur"], env["budget"]
     total, mroi, lo, hi = env["total"], env["mroi"], env["lo"], env["hi"]
     cur_out, opt_out = env["cur_out"], env["opt_out"]
     n = len(CHANNELS)
+    init_m = init_m or {c: 1.0 for c in CHANNELS}  # start from the model's marginal-ROI estimates
 
     def voi_pick(m, v, alloc, rng):
+        # Value of testing channel c = uncertainty x decision leverage (how far its marginal ROI
+        # sits from the reallocation shadow price). NOT current spend — a small channel you might
+        # grow large is high-value. Test where you're unsure AND about to make a big move.
         mbar = float(np.mean(list(m.values())))
         best_c, best_s = None, -1.0
         for c in CHANNELS:
             sd = np.sqrt(v[c])
-            z = abs(m[c] - mbar) / (sd + 1e-9)
-            flip = math.erfc(z / np.sqrt(2))          # P(test could flip the decision)
-            s = flip * (alloc[c] / budget)            # x dollars governed by the decision
+            s = sd * (abs(m[c] - mbar) + 0.2)
             if s > best_s:
                 best_c, best_s = c, s
         return best_c
@@ -162,7 +163,7 @@ def simulate_selection_policies(df, gt, rounds=40, seeds=24, sigma=0.15, eta=0.5
         for seed in range(seeds):
             rng = np.random.default_rng(2000 + seed)
             alloc = dict(cur)
-            m = {c: 1.0 for c in CHANNELS}
+            m = dict(init_m)
             v = {c: 0.6 ** 2 for c in CHANNELS}
             last = {c: alloc[c] for c in CHANNELS}
             gains = [0.0]
@@ -638,7 +639,8 @@ def main():
     sim = simulate_test_and_learn(df, gt, env=env)
     conv = convergence_estimate(sim, weeks_per_cycle=args.weeks_per_cycle)
     print("Experiment-selection policies (smart vs round-robin vs random)...")
-    policies = simulate_selection_policies(df, gt, env=env)
+    init_m = {ch["channel"]: max(ch["mroi"][0], 0.05) for ch in roi["channels"]}
+    policies = simulate_selection_policies(df, gt, env=env, init_m=init_m)
 
     rundir = RUNS_DIR / run_id
     rundir.mkdir(parents=True, exist_ok=True)
