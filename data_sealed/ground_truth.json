@@ -158,5 +158,271 @@
       "market_saturation_mean": 0.7152232604344329,
       "market_saturation_sd": 0.03239116188940766
     }
+  },
+  "spend_ladder": {
+    "paid_social": {
+      "quarter": "2024-Q1",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -12.78358674512827
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -5.274256388368969
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 3.047264142374633
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 4.569187393774194
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 5.525713185427567
+        }
+      ],
+      "true_national_avg_contrib": 281.99382601704866
+    },
+    "paid_search": {
+      "quarter": "2024-Q2",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -11.541132203720558
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -5.584508277784664
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 2.4416040196569138
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 3.249914275578894
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 3.5902092083706507
+        }
+      ],
+      "true_national_avg_contrib": 193.78379957971956
+    },
+    "programmatic_display": {
+      "quarter": "2024-Q3",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -6.8765880062482045
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -3.690115846267896
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 2.9496589678625664
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 4.674212024285365
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 5.8222152201116195
+        }
+      ],
+      "true_national_avg_contrib": 129.67898466743912
+    },
+    "influencer": {
+      "quarter": "2024-Q4",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -2.4392012940736008
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -1.7872022760402955
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 3.3864948318712256
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 7.260927279498422
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 11.134625921375656
+        }
+      ],
+      "true_national_avg_contrib": 46.45697756712181
+    },
+    "dooh": {
+      "quarter": "2025-Q1",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -2.837598122949173
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -1.6123984637001272
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 1.83541463475299
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 3.4500150334072295
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 5.049520203027881
+        }
+      ],
+      "true_national_avg_contrib": 60.139713101689686
+    },
+    "tv_ctv": {
+      "quarter": "2025-Q2",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -8.328093673458605
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -3.52312207054708
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 2.1758848466960394
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 3.336723161079585
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 4.114626221559397
+        }
+      ],
+      "true_national_avg_contrib": 228.7730139134734
+    }
   }
 }

@@ -1,5 +1,5 @@
 # DraftZone MMM — pipeline targets. See docs/INFRA.md.
-.PHONY: data fit experiments anchored evaluate figures report dashboard notebooks test all clean
+.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard dashboard notebooks test all clean
 
 data:        ## generate synthetic national + geo data (+ sealed truth)
 	python -m draftzone_mmm.datagen
@@ -21,6 +21,14 @@ figures:     ## export dashboard data contracts
 
 report:      ## publish per-run HTML report + rebuild the runs index (docs/runs/). LABEL=seed77
 	python scripts/make_report.py $(if $(LABEL),--label $(LABEL),)
+
+ladder:      ## spend-ladder demo: replica geos + multi-cell ladder -> fit curve -> publish docs/ladder/
+	python -m draftzone_mmm.datagen --seed 77 --hetero-geos --spend-ladder
+	python -m draftzone_mmm.spend_ladder
+	python scripts/spend_ladder_report.py
+
+leaderboard: ## grade every engine (incl. spend ladder) against the sealed truth -> docs/engines/
+	python scripts/engine_leaderboard.py
 
 dashboard:   ## build the interactive site
 	cd dashboard && npm ci && npm run build

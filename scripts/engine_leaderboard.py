@@ -41,6 +41,7 @@ ENGINE_COLOR = {
     "pymc_anchored": "#1f77b4",
     "google_meridian": "#2ca02c",
     "google_meridian_calibrated": "#17a589",
+    "spend_ladder": "#d62728",
 }
 
 
@@ -121,7 +122,8 @@ def main():
                pymc_results(df, ARTIFACTS / "idata.nc", "DraftZone PyMC (obs)", "pymc_obs"),
                pymc_results(df, ARTIFACTS / "idata_anchored.nc", "DraftZone PyMC (anchored)", "pymc_anchored")]
     for path, label in [(ARTIFACTS / "meridian_results.json", "Google Meridian"),
-                        (ARTIFACTS / "meridian_calibrated_results.json", "Meridian (naive lift→prior)")]:
+                        (ARTIFACTS / "meridian_calibrated_results.json", "Meridian (naive lift→prior)"),
+                        (ARTIFACTS / "ladder_results.json", "Spend ladder (curve fit)")]:
         if path.exists():
             m = json.load(open(path))
             m["label"] = label
@@ -158,6 +160,20 @@ def main():
             "likelihood anchor; Meridian's <code>roi_calibration_period</code>), or run a "
             "<b>spend ladder</b> to trace the curve. You can't just hand a lift test to an MMM.</div>")
 
+    ladder = next((e for e in engines if e["engine"] == "spend_ladder"), None)
+    ladder_note = ""
+    if ladder:
+        g = grade(ladder, gtd)
+        ladder_note = (
+            '<div class="callout"><b>The spend ladder is the cure for the saturated channels '
+            f'(MAE {g["mae"]:.0f}/ch, {g["hits"]}/{g["n_ci"]} CIs).</b> Instead of feeding ONE lift '
+            "into a prior, it runs several cells per channel at different spend levels — including "
+            "cells <i>below</i> current spend — and fits the response curve through them. The "
+            "bracketing turns the read into an interpolation at the operating point, so it "
+            "right-sizes the saturated channels a single secant mis-credits (paid_social, paid_search). "
+            'It is also the most expensive option. <a href="../ladder/index.html">See the curves '
+            "and the honest cost/time analysis →</a></div>")
+
     gt_total = sum(gtd[f"media_{c}"] for c in CHANNELS)
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -165,7 +181,7 @@ def main():
 <header class="hero"><div class="wrap">
 <div class="kicker">A Skeptic's Guide to Marketing Mix Modeling</div>
 <h1>Engine leaderboard</h1>
-<p class="sub">Five MMM engines, one sealed answer key — graded on the same dataset.
+<p class="sub">Every engine we've tried, one sealed answer key — graded on the same dataset.
 <a href="../runs/index.html">← run tracker</a></p>
 <p>Every engine recovers a per-channel contribution decomposition; we score each against the
 true values (media total {gt_total:.0f} conv/wk). Lower mean absolute error is better. The two
@@ -175,6 +191,7 @@ point-estimate engines (naive, frequentist) have no credible intervals; the Baye
 <main class="wrap"><section>
 <div class="card"><img src="leaderboard.png" alt="engine comparison">
 {table}
+{ladder_note}
 {calib_note}
 <p class="small">All engines share the same Fourier-seasonality control set and public data — no
 engine reads the answer key. "media bias" is total recovered media vs truth (+ = over-credit).

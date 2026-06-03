@@ -106,6 +106,16 @@ T_NATIONAL = 156
 # half-sat, so turning this on makes the model misspecified — a stress test for the experiments.
 SAT_SEASONAL_AMP = 0.35
 
+# Spend-ladder design: instead of ONE test cell per channel, run several cells at different
+# spend levels so the response *curve* can be measured (not assumed). Each level is an additive
+# multiple of the cell's BAU impressions applied during the campaign window (impr = bau*(1+level)),
+# so NEGATIVE levels pull spend DOWN. The cells deliberately BRACKET the current operating point:
+# the down cells (toward dark) pin the curve's absolute level (the channel's total contribution),
+# while the up cells climb a saturated channel into its plateau to expose the diminishing returns.
+# Bracketing turns the read into an INTERPOLATION at the operating point — the thing a single
+# always-UP secant cannot do, and the reason single-cell calibration mis-sizes saturated channels.
+LADDER_LEVELS = (-0.85, -0.5, 0.0, 0.75, 1.75, 3.5)
+
 
 # ----------------------------------------------------------------------
 # National series
@@ -400,6 +410,95 @@ def generate_geo_experiments(seed=808, T_exp=20, pre_period=6, camp_len=12,
     return geo_df, exp_truth, assignments
 
 
+# ----------------------------------------------------------------------
+# Spend ladder: multi-cell experiments that MEASURE the response curve
+# ----------------------------------------------------------------------
+def generate_spend_ladder(seed=909, T_exp=20, pre_period=6, camp_len=12,
+                          national_ctx=None, size_frac=0.06, hetero_sigma=0.12,
+                          levels=LADDER_LEVELS, per_cell=40):
+    """One spend LADDER per channel: several geo cells, each at a different campaign spend level.
+
+    Returns (tidy_dataframe, ladder_truth, size_frac).
+
+    Each channel's markets are split into ``len(levels)`` equal cells. Every market is a
+    scale-consistent SCALED REPLICA of the national channel (impr = national x size x exposure,
+    half-sat = national x size, beta = national x size), using the national NON-normalized adstock
+    so exposure scales linearly. Cell k applies an additive campaign bump of ``levels[k] x BAU``
+    impressions during the campaign window (level 0 = pure control). Reading the DiD lift of each
+    cell vs the control cell traces several points along the channel's response curve; fitting Hill
+    through them recovers (half-sat, slope, beta) directly instead of assuming a shape. Crucially,
+    the high cells climb a SATURATED channel into its plateau, where the curvature — and therefore
+    the ceiling — finally becomes identifiable. ``size_frac`` (the test markets' known share of
+    national scale) is the only quantity the downstream fit needs to translate per-market curves
+    back to the national operating point; it is a public design knob, not truth.
+    """
+    if national_ctx is None:
+        raise ValueError("generate_spend_ladder requires national_ctx (replica scaling)")
+    rows = []
+    ladder_truth = {}
+    n_cells = len(levels)
+    n_markets = n_cells * per_cell  # a ladder needs MORE inventory than a single test — part of its cost
+
+    for ci, channel in enumerate(CHANNELS):
+        p = CH[channel]
+        ctx = national_ctx[channel]
+        slope, theta = p["slope"], p["theta"]
+        rng = np.random.default_rng(seed + 137 * (ci + 1))
+        week = np.arange(T_exp)
+        camp_end = min(pre_period + camp_len, T_exp)
+        in_campaign = (week >= pre_period) & (week < camp_end)
+        season_norm = 0.5 + 0.5 * np.sin(2 * np.pi * (week - 3) / T_exp)
+
+        # market-level replica params (fixed known size, only per-capita exposure jitters)
+        size = size_frac
+        hs_m = ctx["hs"] * size
+        beta_m = ctx["beta"] * size
+        cells_truth = []
+        for k, mult in enumerate(levels):
+            for j in range(per_cell):
+                m = k * per_cell + j
+                expo = float(np.clip(rng.normal(1.0, hetero_sigma), 0.4, 1.8))
+                bau_mean = ctx["imp_mean"] * size * expo
+                mkt_base = ctx["nonmedia"] * size * float(np.exp(rng.normal(0, 0.1)))
+                season_amp = 0.4 * ctx["nonmedia"] * size
+                noise_sd = 0.12 * max(mkt_base, 1.0)
+                bump = mult * bau_mean
+
+                def contrib(impr):
+                    return beta_m * hill_saturation(
+                        geometric_adstock(impr, theta, normalize=False), hs_m, slope)
+
+                bau = np.clip(bau_mean * (1 + 0.08 * season_norm)
+                              + rng.normal(0, bau_mean * 0.12, T_exp), 0, None)
+                extra = np.where(in_campaign, bump, 0.0)
+                impr = np.clip(bau + extra, 0, None)
+                spend = impr / p["imp_per_dollar"]
+                conv = (mkt_base + season_amp * season_norm + contrib(impr)
+                        + rng.normal(0, noise_sd, T_exp))
+                for w in range(T_exp):
+                    rows.append(dict(
+                        channel=channel, cell=k, level_mult=float(mult), market=m,
+                        week=int(w), treated=int(mult != 0), spend=float(spend[w]),
+                        impressions=float(impr[w]), conversions=float(conv[w]),
+                        campaign_window=int(bool(in_campaign[w])), pre_period=int(w < pre_period),
+                    ))
+            # sealed truth: this cell's true per-market-week incremental contribution vs its own BAU
+            bm = ctx["imp_mean"] * size  # cell-representative BAU level (expo ~ 1)
+            bm_series = np.full(T_exp, bm)
+            true_lift = float((contrib(np.where(in_campaign, bm * (1 + mult), bm))
+                               - contrib(bm_series))[in_campaign].mean())
+            cells_truth.append(dict(level_mult=float(mult), true_lift_per_market_week=true_lift))
+
+        ladder_truth[channel] = dict(
+            quarter=GEO_CALENDAR[channel], n_cells=n_cells, per_cell=per_cell,
+            levels=list(map(float, levels)), size_frac=float(size_frac),
+            T_exp=T_exp, pre_period=pre_period, camp_end=int(camp_end),
+            cells=cells_truth,
+        )
+
+    return pd.DataFrame(rows), ladder_truth, float(size_frac)
+
+
 def main():
     ap = argparse.ArgumentParser(description="Generate DraftZone v2 synthetic data.")
     ap.add_argument("--seed", type=int, default=2024)
@@ -413,6 +512,11 @@ def main():
                     help="test markets scatter (normal) around each channel's national saturation")
     ap.add_argument("--hetero-sigma", type=float, default=0.12,
                     help="std of per-market saturation around national (with --hetero-geos)")
+    ap.add_argument("--spend-ladder", action="store_true",
+                    help="also emit data/spend_ladder.csv: multi-cell experiments that MEASURE "
+                         "each channel's response curve (several spend levels) instead of assuming it")
+    ap.add_argument("--ladder-size-frac", type=float, default=0.06,
+                    help="aggregate share of national scale each ladder test market represents")
     args = ap.parse_args()
 
     data_dir = pathlib.Path(args.data_dir)
@@ -436,6 +540,17 @@ def main():
     nat_df.to_csv(data_dir / "national_weekly.csv", index=False)
     geo_df.to_csv(data_dir / "geo_experiments.csv", index=False)
 
+    ladder_size_frac = None
+    if args.spend_ladder:
+        ladder_df, ladder_truth, ladder_size_frac = generate_spend_ladder(
+            seed=args.seed // 2 + 909, national_ctx=national_ctx,
+            size_frac=args.ladder_size_frac,
+            hetero_sigma=(args.hetero_sigma if args.hetero_geos else 0.12))
+        for c in CHANNELS:  # stamp the national target into the sealed ladder truth (datagen may)
+            ladder_truth[c]["true_national_avg_contrib"] = truth["avg_contribution_decomposition"][f"media_{c}"]
+        truth["spend_ladder"] = ladder_truth
+        ladder_df.to_csv(data_dir / "spend_ladder.csv", index=False)
+
     config = dict(
         seed=args.seed,
         n_weeks=T_NATIONAL,
@@ -449,6 +564,9 @@ def main():
         saturation_scale=float(args.saturation_scale),
         hetero_geos=bool(args.hetero_geos),
         hetero_sigma=float(args.hetero_sigma) if args.hetero_geos else 0.0,
+        spend_ladder=bool(args.spend_ladder),
+        ladder_levels=list(map(float, LADDER_LEVELS)) if args.spend_ladder else None,
+        ladder_size_frac=float(ladder_size_frac) if ladder_size_frac is not None else None,
         note="Public config — contains NO true model parameters (see data_sealed/ for truth).",
     )
     with open(data_dir / "config.json", "w") as f:
@@ -460,6 +578,9 @@ def main():
     base_share = BASELINE / nat_df["conversions"].mean()
     print(f"Wrote {data_dir/'national_weekly.csv'} ({len(nat_df)} weeks)")
     print(f"Wrote {data_dir/'geo_experiments.csv'} ({geo_df['channel'].nunique()} channel experiments)")
+    if args.spend_ladder:
+        print(f"Wrote {data_dir/'spend_ladder.csv'} "
+              f"({len(LADDER_LEVELS)}-cell ladder/channel, size_frac={ladder_size_frac})")
     print(f"Realized confound corr(total spend, season) = {corr:.3f}  (target {TARGET_CONFOUND})")
     print(f"Baseline share of conversions ~ {base_share:.0%}")
     print("Sealed truth written to data_sealed/ground_truth.json (pipeline must not read it).")

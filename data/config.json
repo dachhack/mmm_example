@@ -296,5 +296,15 @@
   "saturation_scale": 1.0,
   "hetero_geos": true,
   "hetero_sigma": 0.12,
+  "spend_ladder": true,
+  "ladder_levels": [
+    -0.85,
+    -0.5,
+    0.0,
+    0.75,
+    1.75,
+    3.5
+  ],
+  "ladder_size_frac": 0.06,
   "note": "Public config \u2014 contains NO true model parameters (see data_sealed/ for truth)."
 }
