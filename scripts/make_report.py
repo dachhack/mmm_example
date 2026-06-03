@@ -449,7 +449,14 @@ def build_report_html(meta, before, after, truth, naive, freq, roi, troi, optim,
     e_smart = policies["smart"]["exp_to_90"]
     e_rr = policies["roundrobin"]["exp_to_90"]
     e_rand = policies["random"]["exp_to_90"]
-    sel_save = f"{(1 - e_smart / e_rr) * 100:.0f}%" if e_rr else "—"
+    if e_rr and e_smart < e_rr:
+        sel_verdict = (f"the smart policy reaches the target with about <b>{(1 - e_smart / e_rr) * 100:.0f}% "
+                       "fewer</b> tests than the rotating calendar")
+    else:
+        sel_verdict = (f"<b>smart did not beat round-robin here</b> (≈{e_smart:.0f} vs ≈{e_rr:.0f} tests) — "
+                       "when the model is misspecified, the marginal-ROI beliefs VOI leans on are biased, so "
+                       "trusting them to choose experiments can underperform blind round-robin. The exploration "
+                       "floor is not optional")
 
     # ladder table rows
     ladder_rows = []
@@ -537,19 +544,18 @@ all of it, noisy testing leaves some on the table. Marginal ROIs compress toward
 
 <section><h2>6 · Choosing the next experiment (active design)</h2>
 <p class="lead">Testing is scarce, slow and costly — so <i>which</i> channel you test next is itself an optimization.
-With one geo-test per round, a Value-of-Information policy (test where you're uncertain × near a decision
-boundary × the most dollars at stake) beats blind round-robin and random.</p>
+With one geo-test per round, a Value-of-Information policy (start from the model's beliefs; test where you're
+uncertain × about to make a big move) is compared to blind round-robin and random.</p>
 <div class="card"><img src="selection.png" alt="experiment selection policies">
 <p>To capture <b>90%</b> of the attainable gain: smart selection needed ≈<b>{e_smart:.0f}</b> experiments,
-round-robin ≈<b>{e_rr:.0f}</b>, random ≈<b>{e_rand:.0f}</b> — the smart policy reaches the target with about
-<b>{sel_save}</b> fewer tests than the rotating calendar (≈{e_smart*conv['weeks_per_cycle']:.0f} vs
-{e_rr*conv['weeks_per_cycle']:.0f} weeks at a quarter per test). The agent holds an uncertainty over each
-channel's marginal ROI, sharpens it by testing, lets it go stale as spend moves, and reallocates cautiously
+round-robin ≈<b>{e_rr:.0f}</b>, random ≈<b>{e_rand:.0f}</b> — {sel_verdict}. The agent holds an uncertainty over
+each channel's marginal ROI, sharpens it by testing, lets it go stale as spend moves, and reallocates cautiously
 (damped by what it doesn't know).</p>
-<div class="callout warn"><b>The honest limit:</b> VOI is computed from the model's <i>own</i> uncertainty, so it
-is blind to <i>bias</i> the model doesn't know it has — a confidently-wrong anchor (like affiliate earlier)
-won't be flagged for re-testing. A smart program therefore keeps an <b>exploration floor</b>: re-validate even
-"settled" channels on a cadence to catch drift and bias the uncertainty can't see.</div></div></section>
+<div class="callout warn"><b>The honest limit:</b> VOI is computed from the model's <i>own</i> beliefs, so it is
+blind to <i>bias</i> the model doesn't know it has. When the model is misspecified (e.g. it assumes constant
+saturation but the truth is seasonal), trusting those beliefs to pick experiments can actually lose to blind
+round-robin. A smart program therefore keeps an <b>exploration floor</b>: re-validate even "settled" channels on
+a cadence to catch the drift and bias the uncertainty can't see.</div></div></section>
 
 <section><h2>What we learned</h2><div class="card">
 <ol>
@@ -573,6 +579,7 @@ def build_index_html(manifest):
         rows.append([
             f'<a href="{r["id"]}/report.html">{r["label"]}</a>',
             r["seed"], a.get("confound", "–"), a.get("baseline_share", "–"),
+            a.get("saturation", "stable"),
             f'{r["mae_before"]:.0f} → {r["mae_after"]:.0f}',
             f'{r["uc_before"]:.0f}% → {r["uc_after"]:.0f}%',
             f'{r["pp_coverage"]:.0f}%',
@@ -583,7 +590,7 @@ def build_index_html(manifest):
             r.get("robust_moves") or "—",
             r["timestamp"][:16].replace("T", " "),
         ])
-    table = _tbl(["run", "seed", "confound", "baseline", "MAE obs→anch",
+    table = _tbl(["run", "seed", "confound", "baseline", "saturation", "MAE obs→anch",
                   "media under-credit", "interval cov.", "attainable lift",
                   "≈time to 90%", "tests→90% smart/RR", "robust move(s)", "generated"], rows)
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
