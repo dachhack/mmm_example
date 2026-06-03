@@ -105,7 +105,7 @@ def grade(res, gtd):
                 hits=hits, n_ci=n_ci, r2=res["fit"].get("r2"))
 
 
-def fig_leaderboard(path, engines, gtd):
+def fig_leaderboard(path, engines, gtd, geo_gtd=None):
     x = np.arange(len(CHANNELS))
     n = len(engines)
     w = 0.8 / n
@@ -114,7 +114,10 @@ def fig_leaderboard(path, engines, gtd):
         vals = [e["channels"][c]["est_contrib"] for c in CHANNELS]
         ax.bar(x + (i - (n - 1) / 2) * w, vals, w, label=e["label"],
                color=ENGINE_COLOR.get(e["engine"], "#999"))
-    ax.plot(x, [gtd[f"media_{c}"] for c in CHANNELS], "k_", ms=22, mew=3, label="TRUTH")
+    ax.plot(x, [gtd[f"media_{c}"] for c in CHANNELS], "k_", ms=22, mew=3, label="TRUTH (national)")
+    if geo_gtd and any(_is_geo(e) for e in engines):
+        ax.plot(x, [geo_gtd[f"media_{c}"] for c in CHANNELS], "_", color="#0b6e0b",
+                ms=22, mew=3, label="TRUTH (geo world)")
     ax.set_xticks(x)
     ax.set_xticklabels(CHANNELS, rotation=20, ha="right")
     ax.set_ylabel("avg contribution (conv/wk)")
@@ -126,9 +129,20 @@ def fig_leaderboard(path, engines, gtd):
     plt.close(fig)
 
 
+def _is_geo(e):
+    return "_geo" in e["engine"]
+
+
 def main():
     df = load_national()
-    gtd = json.load(open(SEALED))["avg_contribution_decomposition"]
+    sealed = json.load(open(SEALED))
+    gtd = sealed["avg_contribution_decomposition"]
+    # geo engines fit the geo PANEL — a different world (targeted-spend confounder + Jensen gap), so
+    # they are graded against the panel's OWN sealed answer key, not the national one.
+    geo_block = sealed.get("geo_panel", {}).get("avg_contribution_decomposition")
+    geo_gtd = {f"media_{c}": v for c, v in geo_block.items()} if geo_block else gtd
+    truth_for = lambda e: geo_gtd if _is_geo(e) else gtd  # noqa: E731
+
     engines = [naive_results(df), freq_results(df),
                pymc_results(df, ARTIFACTS / "idata.nc", "DraftZone PyMC (obs)", "pymc_obs"),
                pymc_results(df, ARTIFACTS / "idata_anchored.nc", "DraftZone PyMC (anchored)", "pymc_anchored")]
@@ -150,16 +164,17 @@ def main():
         engines.append(m)
 
     OUT.mkdir(parents=True, exist_ok=True)
-    fig_leaderboard(OUT / "leaderboard.png", engines, gtd)
+    fig_leaderboard(OUT / "leaderboard.png", engines, gtd, geo_gtd)
 
     rows = []
-    for e in sorted(engines, key=lambda e: grade(e, gtd)["mae"]):
-        g = grade(e, gtd)
+    for e in sorted(engines, key=lambda e: grade(e, truth_for(e))["mae"]):
+        g = grade(e, truth_for(e))
         cov = f"{g['hits']}/{g['n_ci']}" if g["n_ci"] else "—"
-        rows.append([e["label"], "Bayesian" if e.get("bayesian") else "point",
+        world = "geo" if _is_geo(e) else "nat'l"
+        rows.append([e["label"], world, "Bayesian" if e.get("bayesian") else "point",
                      f"{g['r2']:.3f}" if g["r2"] is not None else "—",
                      f"{g['mae']:.0f}", f"{g['media_bias']:+.0f}%", cov])
-    table = mr._tbl(["engine", "type", "R²", "MAE/ch ↓", "media bias", "CIs hit"], rows)
+    table = mr._tbl(["engine", "world", "type", "R²", "MAE/ch ↓", "media bias", "CIs hit"], rows)
 
     calib = next((e for e in engines if e["engine"] == "google_meridian_calibrated"), None)
     calib_note = ""
@@ -194,36 +209,45 @@ def main():
             'It is also the most expensive option. <a href="../ladder/index.html">See the curves '
             "and the honest cost/time analysis →</a></div>")
 
-    def _mae(eng_id):
+    def _g(eng_id):
         e = next((e for e in engines if e["engine"] == eng_id), None)
-        return grade(e, gtd)["mae"] if e else None
+        return grade(e, truth_for(e)) if e else None
 
     mer_note = ""
-    fo, ak, ge = _mae("google_meridian"), _mae("google_meridian_aks"), _mae("google_meridian_geo")
-    if fo is not None and (ak is not None or ge is not None):
-        parts = [f"national + Fourier controls (MAE {fo:.0f})"]
-        if ak is not None:
-            parts.append(f"national + Meridian's own AKS knots, no Fourier (MAE {ak:.0f})")
-        if ge is not None:
-            parts.append(f"the multi-geo panel (MAE {ge:.0f})")
+    gfo, gak, gge = _g("google_meridian"), _g("google_meridian_aks"), _g("google_meridian_geo")
+    if gfo and (gak or gge):
+        parts = [f"national + Fourier controls (MAE {gfo['mae']:.0f})"]
+        if gak:
+            parts.append(f"national + Meridian's own AKS knots, no Fourier (MAE {gak['mae']:.0f})")
+        if gge:
+            parts.append(f"the multi-geo panel (MAE {gge['mae']:.0f})")
         verdict = ""
-        if ge is not None:
-            ge_e = next(e for e in engines if e["engine"] == "google_meridian_geo")
-            ge_g = grade(ge_e, gtd)
-            verdict = (" Fitting the <b>geo panel</b> — what Meridian is actually built for — wins on "
-                       f"accuracy (MAE {ge:.0f}): spend that varies across geos within a week breaks the "
-                       "spend↔season confound with cross-sectional identification the national series "
-                       "cannot provide, and the extra data shrinks the intervals sharply. The catch: "
-                       f"those tight intervals only cover truth {ge_g['hits']}/{ge_g['n_ci']} times — geo "
-                       "data buys <i>precision</i>, not immunity from bias, so residual error shows up as "
-                       "<i>confidently</i> wrong channels (here paid_search and influencer). The best-"
-                       f"calibrated setup is still national AKS (bias ~0%, {grade(next(e for e in engines if e['engine']=='google_meridian_aks'), gtd)['hits']}/"
-                       f"{grade(next(e for e in engines if e['engine']=='google_meridian_aks'), gtd)['n_ci']} CIs).")
+        if gge:
+            conf = sealed.get("geo_panel", {})
+            rc = conf.get("realized_corr_spend_demand")
+            rc_txt = f" (realized corr(spend, demand) {rc:+.2f})" if rc is not None else ""
+            better = gak and gge["mae"] < gak["mae"]
+            verdict = (
+                " The geo panel is Meridian's home turf — spend varies across geos within a week, "
+                "cross-sectional identification the national series lacks — but this panel is "
+                "<b>hardened</b>: a latent geo×time demand factor both lifts non-media conversions and "
+                f"draws targeted spend{rc_txt}, the geo analogue of the spend↔season confound, and it "
+                "is graded against the geo world's own answer key. Result: geo Meridian lands at "
+                f"<b>MAE {gge['mae']:.0f}</b> (media bias {gge['media_bias']:+.0f}%, "
+                f"{gge['hits']}/{gge['n_ci']} CIs) — "
+                + ("still strong, " if better else "no longer ahead of national AKS, ")
+                + "and the confounder pushes it to "
+                + ("over-credit media on the targeted channels. " if gge["media_bias"] > 3 else
+                   "mis-rank a couple of channels. ")
+                + f"National AKS stays the best-calibrated config (MAE {gak['mae']:.0f}, bias "
+                  f"{gak['media_bias']:+.0f}%, {gak['hits']}/{gak['n_ci']} CIs). Geo data buys "
+                  "cross-sectional power, <b>not immunity from an unobserved confounder</b>.")
         mer_note = (
             '<div class="callout"><b>Meridian, configured three ways.</b> Same scale-corrected ROI '
             "prior, three seasonality/geo setups: " + "; ".join(parts) + "."
-            + verdict + " The Fourier workaround and AKS are two roads to the same end on national "
-            "data; geo data is the principled fix." + "</div>")
+            + verdict + " On national data the Fourier workaround and AKS are two roads to the same "
+            "end; geo data adds cross-sectional power but, as the hardened panel shows, is no free "
+            "lunch against an unobserved geo confounder." + "</div>")
 
     gt_total = sum(gtd[f"media_{c}"] for c in CHANNELS)
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -235,9 +259,13 @@ def main():
 <p class="sub">Every engine we've tried, one sealed answer key — graded on the same dataset.
 <a href="../runs/index.html">← run tracker</a></p>
 <p>Every engine recovers a per-channel contribution decomposition; we score each against the
-true values (media total {gt_total:.0f} conv/wk). Lower mean absolute error is better. The two
-point-estimate engines (naive, frequentist) have no credible intervals; the Bayesian engines
-(our PyMC, Meridian) report whether their 89% interval contains the truth.</p>
+true values (national media total {gt_total:.0f} conv/wk). Lower mean absolute error is better. The
+two point-estimate engines (naive, frequentist) have no credible intervals; the Bayesian engines
+(our PyMC, Meridian) report whether their 89% interval contains the truth. The <b>world</b> column
+flags the data each engine was fit on: national engines are scored against the national answer key;
+the <b>geo-panel</b> engine is a different, harder world — a multi-geo dataset with a latent
+geo×time demand confounder (targeted spend) — so it is scored against the geo world's own sealed
+key (a lower media total, because targeting concentrates spend into Hill saturation).</p>
 </div></header>
 <main class="wrap"><section>
 <div class="card"><img src="leaderboard.png" alt="engine comparison">

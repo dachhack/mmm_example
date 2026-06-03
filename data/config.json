@@ -308,5 +308,7 @@
   "ladder_size_frac": 0.06,
   "geo_panel": true,
   "n_geos": 50,
+  "geo_confound": 1.0,
+  "geo_noise_frac": 0.18,
   "note": "Public config \u2014 contains NO true model parameters (see data_sealed/ for truth)."
 }

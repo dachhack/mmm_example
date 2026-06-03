@@ -428,13 +428,16 @@
   "geo_panel": {
     "n_geos": 50,
     "idio_sigma": 0.3,
+    "confound": 1.0,
+    "noise_frac": 0.18,
+    "realized_corr_spend_demand": 0.7407354966017872,
     "avg_contribution_decomposition": {
-      "paid_social": 278.65886630180484,
-      "paid_search": 187.29298351342388,
-      "programmatic_display": 127.54789594337318,
-      "influencer": 46.5157923501338,
-      "dooh": 59.811774282858444,
-      "tv_ctv": 227.51484198881857
+      "paid_social": 237.71448280775485,
+      "paid_search": 142.09483558217335,
+      "programmatic_display": 105.1070369352986,
+      "influencer": 43.66196911135809,
+      "dooh": 53.79598111134781,
+      "tv_ctv": 204.5464414562245
     },
     "note": "Geo-world truth: summed-across-geos avg weekly contribution per channel. Slightly below the national truth by the Hill aggregation (Jensen) gap."
   }

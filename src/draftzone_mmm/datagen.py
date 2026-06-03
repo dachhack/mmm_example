@@ -502,20 +502,27 @@ def generate_spend_ladder(seed=909, T_exp=20, pre_period=6, camp_len=12,
 # ----------------------------------------------------------------------
 # National geo PANEL (for geo-level engines like Meridian)
 # ----------------------------------------------------------------------
-def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30):
+def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30,
+                       confound=0.0, noise_frac=0.06, demand_rel=0.20):
     """Decompose the national series into a multi-geo panel for geo-level MMM engines.
 
     Meridian (and geo MMMs generally) are built for geo×time data: spend that varies ACROSS geos
-    within a week supplies cross-sectional identification the national time series cannot — it is
-    the principled way to break the spend↔season confound. We split each channel's national weekly
-    impressions across ``n_geos`` geos so they SUM BACK to the national series (grading stays on the
-    same answer key), but each geo gets an idiosyncratic, season-decorrelated spend multiplier so
-    the panel actually carries that cross-sectional signal.
+    within a week supplies cross-sectional identification the national time series cannot. We split
+    each channel's national weekly impressions across ``n_geos`` geos so they SUM BACK to the
+    national series (grading stays on the same answer key), each geo a population-weighted scaled
+    replica (per-capita exposure = national × idiosyncratic multiplier; contribution =
+    size_g × beta × Hill(adstock(per-capita))). Because Hill is concave, the summed geo contribution
+    is a hair below national (an honest Jensen gap, reported in the truth).
 
-    Geo g is a population-weighted scaled replica: per-capita exposure = national per-capita ×
-    idiosyncratic multiplier, contribution = size_g × beta × Hill(adstock(per-capita)). Because Hill
-    is concave, the summed geo contribution is a hair below the national contribution (an honest
-    aggregation/Jensen gap, reported in the sealed truth). Returns (panel_df, geo_truth).
+    HARDENING (``confound`` > 0): a latent geo×time DEMAND factor d[g,t] (local economy/sports
+    swings, AR over time, demeaned across geos so national totals are preserved) does two things the
+    model never sees — it (1) raises that geo-week's NON-media conversions and (2) makes the marketer
+    TARGET it with more spend. That is the geo analogue of the national spend↔season confound: within
+    a geo, weeks with more spend also have more demand-driven conversions, so an MMM with no proxy for
+    d over-credits media. Meridian's per-geo intercept and shared seasonal baseline absorb the
+    time-invariant and national-seasonal parts, but NOT geo-specific time-varying demand — exactly the
+    residual that bites real geo studies. ``noise_frac`` sets realistic per-geo-week noise.
+    Returns (panel_df, geo_truth).
     """
     rng = np.random.default_rng(seed)
     T = len(nat_df)
@@ -531,14 +538,25 @@ def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30):
     size = np.exp(rng.normal(0, 0.45, n_geos))
     size = size / size.sum()                       # population shares, sum to 1
 
+    # latent geo×time demand confounder: AR(1) over time, demeaned across geos each week so it
+    # neither changes national totals nor is captured by a national seasonal baseline.
+    d = np.zeros((n_geos, T))
+    phi = 0.6
+    eps = rng.normal(0, 1, (n_geos, T))
+    d[:, 0] = eps[:, 0]
+    for t in range(1, T):
+        d[:, t] = phi * d[:, t - 1] + np.sqrt(1 - phi ** 2) * eps[:, t]
+    d -= d.mean(axis=0, keepdims=True)             # zero-mean across geos each week
+    spend_tilt = np.exp(0.9 * confound * d)        # marketer targets high-demand geo-weeks
+
     rows = []
     summed_contrib = {c: np.zeros(T) for c in CHANNELS}
     for c in CHANNELS:
         p = CH[c]
         I_c = nat_df[f"{c}_impressions"].to_numpy(float)         # national impressions
-        percap_nat = I_c                                         # national per-capita exposure level
-        # idiosyncratic, time-varying geo multipliers, normalised so geo impressions sum to national
-        m_raw = np.exp(rng.normal(0, idio_sigma, (n_geos, T)))
+        # idiosyncratic, time-varying geo multipliers, tilted toward demand, normalised so geo
+        # impressions still sum to the national series each week.
+        m_raw = np.exp(rng.normal(0, idio_sigma, (n_geos, T))) * spend_tilt
         w = size[:, None] * m_raw
         share = w / w.sum(axis=0, keepdims=True)                 # geo share of national impr each week
         I_g = share * I_c[None, :]                               # geo impressions, sum_g = I_c
@@ -548,7 +566,6 @@ def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30):
             ad = geometric_adstock(percap, p["theta"])           # non-normalized (matches national)
             contrib = size[g] * p["beta"] * hill_saturation(ad, hs_used, p["slope"])
             summed_contrib[c] += contrib
-            # stash per (g,c)
             for t in range(T):
                 rows.append((g, t, c, float(I_g[g, t]), float(I_g[g, t] / p["imp_per_dollar"]),
                              float(contrib[t])))
@@ -557,16 +574,20 @@ def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30):
     import collections
     by_gt = collections.defaultdict(dict)
     contrib_gt = collections.defaultdict(float)
+    spend_gt = collections.defaultdict(float)
     for g, t, c, imp, spend, contrib in rows:
         by_gt[(g, t)][f"{c}_impressions"] = imp
         by_gt[(g, t)][f"{c}_spend"] = spend
         contrib_gt[(g, t)] += contrib
+        spend_gt[(g, t)] += spend
 
     panel = []
+    demand_series, spend_series = [], []           # for the realized-confound diagnostic
     for g in range(n_geos):
         for t in range(T):
-            base = nonmedia[t] * size[g]
-            conv = base + contrib_gt[(g, t)] + rng.normal(0, 0.06 * max(base, 1.0))
+            demand_mult = 1.0 + demand_rel * confound * d[g, t]
+            base = nonmedia[t] * size[g] * demand_mult           # demand lifts NON-media conversions
+            conv = base + contrib_gt[(g, t)] + rng.normal(0, noise_frac * max(base, 1.0))
             row = dict(geo=f"geo_{g:03d}", week=week[t], population=float(size[g]),
                        conversions=float(max(conv, 0.0)),
                        promo_flag=float(ctrl["promo_flag"][t]),
@@ -575,10 +596,15 @@ def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30):
                        holiday_flag=float(nat_df["holiday_flag"].to_numpy()[t]))
             row.update(by_gt[(g, t)])
             panel.append(row)
+            demand_series.append(d[g, t])
+            spend_series.append(spend_gt[(g, t)] / size[g])      # per-capita total spend
     panel_df = pd.DataFrame(panel)
 
+    realized_confound = float(np.corrcoef(np.array(spend_series), np.array(demand_series))[0, 1])
     geo_truth = dict(
         n_geos=n_geos, idio_sigma=float(idio_sigma),
+        confound=float(confound), noise_frac=float(noise_frac),
+        realized_corr_spend_demand=realized_confound,
         avg_contribution_decomposition={c: float(summed_contrib[c].mean()) for c in CHANNELS},
         note="Geo-world truth: summed-across-geos avg weekly contribution per channel. Slightly "
              "below the national truth by the Hill aggregation (Jensen) gap.",
@@ -608,6 +634,11 @@ def main():
                     help="also emit data/geo_panel.csv: a multi-geo panel (geos sum to national) "
                          "for geo-level engines like Meridian")
     ap.add_argument("--n-geos", type=int, default=50)
+    ap.add_argument("--geo-confound", type=float, default=1.0,
+                    help="strength of the latent geo×time demand confounder (targeted spend + "
+                         "demand-driven baseline). 0 = clean idealized panel; ~1 = realistic")
+    ap.add_argument("--geo-noise-frac", type=float, default=0.18,
+                    help="per-geo-week conversion noise as a fraction of the geo baseline")
     args = ap.parse_args()
 
     data_dir = pathlib.Path(args.data_dir)
@@ -644,7 +675,8 @@ def main():
 
     if args.geo_panel:
         panel_df, geo_truth = generate_geo_panel(nat_df, truth, seed=args.seed // 3 + 606,
-                                                 n_geos=args.n_geos)
+                                                 n_geos=args.n_geos, confound=args.geo_confound,
+                                                 noise_frac=args.geo_noise_frac)
         truth["geo_panel"] = geo_truth
         panel_df.to_csv(data_dir / "geo_panel.csv", index=False)
 
@@ -666,6 +698,8 @@ def main():
         ladder_size_frac=float(ladder_size_frac) if ladder_size_frac is not None else None,
         geo_panel=bool(args.geo_panel),
         n_geos=int(args.n_geos) if args.geo_panel else None,
+        geo_confound=float(args.geo_confound) if args.geo_panel else None,
+        geo_noise_frac=float(args.geo_noise_frac) if args.geo_panel else None,
         note="Public config — contains NO true model parameters (see data_sealed/ for truth).",
     )
     with open(data_dir / "config.json", "w") as f:
@@ -681,10 +715,13 @@ def main():
         print(f"Wrote {data_dir/'spend_ladder.csv'} "
               f"({len(LADDER_LEVELS)}-cell ladder/channel, size_frac={ladder_size_frac})")
     if args.geo_panel:
-        gp = truth["geo_panel"]["avg_contribution_decomposition"]
+        gtp = truth["geo_panel"]
+        gp = gtp["avg_contribution_decomposition"]
+        nat_med = sum(truth['avg_contribution_decomposition'][f'media_{c}'] for c in CHANNELS)
         print(f"Wrote {data_dir/'geo_panel.csv'} ({args.n_geos} geos; "
-              f"geo media total {sum(gp.values()):.0f} vs national "
-              f"{sum(truth['avg_contribution_decomposition'][f'media_{c}'] for c in CHANNELS):.0f} conv/wk)")
+              f"geo media total {sum(gp.values()):.0f} vs national {nat_med:.0f} conv/wk; "
+              f"confound={args.geo_confound}, noise={args.geo_noise_frac:.0%}, "
+              f"realized corr(spend,demand)={gtp['realized_corr_spend_demand']:+.2f})")
     print(f"Realized confound corr(total spend, season) = {corr:.3f}  (target {TARGET_CONFOUND})")
     print(f"Baseline share of conversions ~ {base_share:.0%}")
     print("Sealed truth written to data_sealed/ground_truth.json (pipeline must not read it).")
