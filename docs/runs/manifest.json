@@ -3,7 +3,7 @@
     "id": "seed77",
     "label": "seed77",
     "seed": 77,
-    "timestamp": "2026-06-03T15:37:17Z",
+    "timestamp": "2026-06-03T15:46:16Z",
     "assumptions": {
       "confound": 0.6,
       "baseline_share": "43%",
@@ -16,6 +16,9 @@
     "uc_after": 15.369186813733071,
     "pp_coverage": 32.1,
     "attainable_lift": 2.0642123503657572,
+    "weeks_to_converge": 13,
+    "rounds_to_converge": 1,
+    "weeks_per_cycle": 13,
     "robust_moves": "tv decrease, affiliate increase"
   }
 ]

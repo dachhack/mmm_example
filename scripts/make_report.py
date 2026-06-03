@@ -117,6 +117,30 @@ def simulate_test_and_learn(df, gt, rounds=30, eta=0.5):
                 low=run(0.10), high=run(0.40))
 
 
+def rounds_to(outs, cur_out, opt_out, thresh=0.90):
+    """First round at which the trajectory reaches `thresh` of the attainable gain (or None)."""
+    gap = opt_out - cur_out
+    if gap <= 1e-9:
+        return 0
+    for i, o in enumerate(outs):
+        if (o - cur_out) / gap >= thresh:
+            return i
+    return None
+
+
+def convergence_estimate(sim, weeks_per_cycle=13, thresh=0.90):
+    """Translate rounds-to-convergence into a calendar estimate. One round = one experiment
+    cycle (measure every channel's marginal, reallocate, re-measure) ~= a quarter if tests run
+    in parallel across channels."""
+    r_low = rounds_to(sim["low"][0], sim["cur_out"], sim["opt_out"], thresh)
+    r_high = rounds_to(sim["high"][0], sim["cur_out"], sim["opt_out"], thresh)
+    def wks(r):
+        return None if r is None else int(round(r * weeks_per_cycle))
+    return dict(thresh=thresh, weeks_per_cycle=weeks_per_cycle,
+                rounds_low=r_low, rounds_high=r_high,
+                weeks_low=wks(r_low), weeks_high=wks(r_high))
+
+
 # ---------------------------------------------------------------- figures
 def fig_ladder(path, naive, freq, before, after, truth):
     tiers = ["naive\n(OLS)", "frequentist\n(NLS)", "Bayesian\n(observational)", "anchored\n(+experiments)"]
@@ -178,7 +202,7 @@ def fig_roi(path, roi, troi):
     plt.close(fig)
 
 
-def fig_tnl(path, sim):
+def fig_tnl(path, sim, conv=None):
     cur_out, opt_out = sim["cur_out"], sim["opt_out"]
 
     def gain(o):
@@ -188,8 +212,15 @@ def fig_tnl(path, sim):
     ax[0].plot(gain(sim["low"][0]), color="#2ca02c", lw=2, label="high volume (low noise)")
     ax[0].plot(gain(sim["high"][0]), color="#d62728", lw=1.6, alpha=0.8, label="low volume (noisy)")
     ax[0].axhline(100, ls="--", color="#888")
+    if conv and conv.get("rounds_low") is not None:
+        thr = 100 * conv["thresh"]
+        r = conv["rounds_low"]
+        ax[0].axhline(thr, ls=":", color="#bbb")
+        ax[0].axvline(r, ls=":", color="#2ca02c")
+        ax[0].annotate(f"≈{r} rounds → ~{conv['weeks_low']} wks", (r, thr),
+                       textcoords="offset points", xytext=(6, -14), fontsize=8, color="#2ca02c")
     ax[0].set_title("Convergence to true optimum")
-    ax[0].set_xlabel("round")
+    ax[0].set_xlabel("round  (≈ one experiment cycle ≈ a quarter)")
     ax[0].set_ylabel("% of attainable gain")
     ax[0].legend(fontsize=8)
     ax[0].grid(alpha=0.3)
@@ -235,13 +266,20 @@ img{max-width:100%;border-radius:8px;border:1px solid var(--line);margin:8px 0}
 .metric{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0}.metric .m b{font-size:1.4rem;display:block}.metric .m span{color:var(--muted);font-size:.78rem}
 .small{font-size:.82rem;color:var(--muted)}footer{padding:36px 0 70px;color:var(--muted);font-size:.85rem}
 .tag{display:inline-block;background:#1d2530;border:1px solid var(--line);border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:.8rem}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0}table{min-width:520px}
+@media(max-width:640px){
+ .wrap{padding:0 14px}header.hero{padding:34px 0 22px}h1{font-size:1.5rem}h2{font-size:1.2rem}
+ .sub{font-size:.95rem}section{padding:24px 0}.card{padding:13px 14px}
+ th,td{padding:6px 7px;font-size:.84rem}.metric{gap:16px}.metric .m b{font-size:1.2rem}
+ body{font-size:15px}.kicker{font-size:.66rem}
+}
 """
 
 
 def _tbl(headers, rows):
     h = "".join(f"<th>{x}</th>" for x in headers)
     body = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows)
-    return f"<table><thead><tr>{h}</tr></thead><tbody>{body}</tbody></table>"
+    return f'<div class="tablewrap"><table><thead><tr>{h}</tr></thead><tbody>{body}</tbody></table></div>'
 
 
 def _verdict_pill(v):
@@ -249,7 +287,7 @@ def _verdict_pill(v):
     return f'<span class="pill {cls}">{v}</span>'
 
 
-def build_report_html(meta, before, after, truth, naive, freq, roi, troi, optim, sim):
+def build_report_html(meta, before, after, truth, naive, freq, roi, troi, optim, sim, conv):
     gtd = truth
     chans = CHANNELS
     mae_b = np.mean([abs(before[c][0] - gtd[c]) for c in chans])
@@ -265,6 +303,25 @@ def build_report_html(meta, before, after, truth, naive, freq, roi, troi, optim,
     mroi_note = ("— and every channel's marginal ROI at the optimum was below break-even, "
                  "implying the budget itself is too large (or a deliberate growth bet)."
                  if all_mroi_below1 else ".")
+    cw, ch_ = conv.get("weeks_low"), conv.get("weeks_high")
+    conv_metric = f"~{cw} wks" if cw is not None else "—"
+    conv_years = f"≈{cw / 52:.1f} yrs" if cw is not None else ""
+    pct_thr = int(conv["thresh"] * 100)
+    r_low, r_high, wpc = conv["rounds_low"], conv["rounds_high"], conv["weeks_per_cycle"]
+    if cw is not None:
+        noisy_rounds = "" if ch_ is None else f" / ≈{r_high} (noisy)"
+        noisy_weeks = "" if ch_ is None else f" — or ~{ch_} wks if tests are noisy"
+        conv_sentence = (
+            f"Reaching <b>{pct_thr}%</b> of the attainable gain took ≈<b>{r_low}</b> rounds "
+            f"(high-volume testing){noisy_rounds}. At one experiment cycle per quarter "
+            f"(~{wpc} wks, run in parallel across channels) that's ≈<b>{cw} weeks ({conv_years})</b>"
+            f"{noisy_weeks}; testing one channel at a time instead of in parallel would be roughly "
+            "5× longer. This is the <i>no-drift</i> ideal — with drift the optimum keeps moving, "
+            "so you never fully arrive, you perpetually pursue."
+        )
+    else:
+        conv_sentence = ("The high-volume trajectory did not reach the threshold within the "
+                         "simulated horizon.")
 
     # ladder table rows
     ladder_rows = []
@@ -312,6 +369,7 @@ def build_report_html(meta, before, after, truth, naive, freq, roi, troi, optim,
 <div class="m"><b>{mae_b:.0f} → {mae_a:.0f}</b><span>mean abs error / channel</span></div>
 <div class="m"><b>{meta['pp_coverage']:.0f}%</b><span>89% interval coverage (overconfidence)</span></div>
 <div class="m"><b>+{attain:.1f}%</b><span>max attainable fixed-budget lift</span></div>
+<div class="m"><b>{conv_metric}</b><span>est. time to {pct_thr}% of optimum ({conv_years}, no drift)</span></div>
 </div>
 <p>On this dataset (confound ρ≈{asm['confound']}, baseline {asm['baseline_share']}), the observational
 Bayesian model under-credited media and was overconfident. One randomized geo-experiment per channel
@@ -345,6 +403,7 @@ Under idealized always-on testing the maximum attainable fixed-budget lift was <
 <section><h2>5 · Idealized long-run test-and-learn</h2>
 <p class="lead">Unbiased experiments, no drift: iterate small steps, re-measure, converge.</p>
 <div class="card"><img src="tnl.png" alt="test and learn">
+<p>{conv_sentence}</p>
 <p class="small">Max attainable fixed-budget lift <b>+{attain:.1f}%</b>; high-volume testing captures essentially
 all of it, noisy testing leaves some on the table. Marginal ROIs compress toward equalization — the optimality condition.</p></div></section>
 
@@ -374,12 +433,13 @@ def build_index_html(manifest):
             f'{r["uc_before"]:.0f}% → {r["uc_after"]:.0f}%',
             f'{r["pp_coverage"]:.0f}%',
             f'+{r["attainable_lift"]:.1f}%',
+            (f'~{r["weeks_to_converge"]} wk' if r.get("weeks_to_converge") is not None else "—"),
             r.get("robust_moves") or "—",
             r["timestamp"][:16].replace("T", " "),
         ])
     table = _tbl(["run", "seed", "confound", "baseline", "MAE obs→anch",
                   "media under-credit", "interval cov.", "attainable lift",
-                  "robust move(s)", "generated"], rows)
+                  "≈time to 90%", "robust move(s)", "generated"], rows)
     return f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>DraftZone MMM — run tracker</title><style>{CSS}</style></head><body>
@@ -396,7 +456,9 @@ can actually attain. Open a run for the full report. <a href="../index.html">Int
 <div class="card">{table}</div>
 <p class="small">"MAE obs→anch" = mean absolute per-channel attribution error, observational vs experiment-anchored
 (lower is better). "interval cov." is what % of weeks the nominal 89% predictive band actually covers
-(≪89% = overconfident). "attainable lift" is the max fixed-budget conversion gain under perfect test-and-learn.</p>
+(≪89% = overconfident). "attainable lift" is the max fixed-budget conversion gain under perfect test-and-learn.
+"≈time to 90%" estimates the calendar weeks to capture 90% of that gain (one experiment cycle ≈ a quarter, run
+in parallel; no-drift idealization — with drift you never fully arrive).</p>
 </section></main>
 <footer class="wrap">Generated by <code>scripts/make_report.py</code>.</footer>
 </body></html>"""
@@ -408,6 +470,8 @@ def main():
     ap.add_argument("--label", default=None, help="run label (default seed{N}); same label overwrites")
     ap.add_argument("--idata", default=str(ARTIFACTS / "idata.nc"))
     ap.add_argument("--idata-anchored", default=str(ARTIFACTS / "idata_anchored.nc"))
+    ap.add_argument("--weeks-per-cycle", type=int, default=13,
+                    help="calendar weeks per test-and-learn round (one experiment cycle ~ a quarter)")
     args = ap.parse_args()
 
     df = load_national()
@@ -437,6 +501,7 @@ def main():
 
     print("Test-and-learn simulation...")
     sim = simulate_test_and_learn(df, gt)
+    conv = convergence_estimate(sim, weeks_per_cycle=args.weeks_per_cycle)
 
     rundir = RUNS_DIR / run_id
     rundir.mkdir(parents=True, exist_ok=True)
@@ -444,7 +509,7 @@ def main():
                {c: after[c][0] for c in CHANNELS}, gtd)
     fig_repair(rundir / "repair.png", before, after, gtd)
     fig_roi(rundir / "roi.png", roi, troi)
-    fig_tnl(rundir / "tnl.png", sim)
+    fig_tnl(rundir / "tnl.png", sim, conv)
 
     meta = dict(
         id=run_id, label=label, seed=seed,
@@ -454,7 +519,7 @@ def main():
                          baseline_share=f"{gt['avg_contribution_decomposition']['baseline']/df['conversions'].mean():.0%}",
                          weeks=cfg["n_weeks"], markets=cfg["n_markets"]),
     )
-    html = build_report_html(meta, before, after, gtd, naive, freq, roi, troi, optim, sim)
+    html = build_report_html(meta, before, after, gtd, naive, freq, roi, troi, optim, sim, conv)
     (rundir / "report.html").write_text(html, encoding="utf-8")
 
     # manifest upsert
@@ -475,6 +540,9 @@ def main():
         uc_after=100 * (1 - sum(after[c][0] for c in CHANNELS) / mt),
         pp_coverage=sc_a["fit"]["pp_interval_coverage"],
         attainable_lift=100 * (sim["opt_out"] / sim["cur_out"] - 1),
+        weeks_to_converge=conv["weeks_low"],
+        rounds_to_converge=conv["rounds_low"],
+        weeks_per_cycle=conv["weeks_per_cycle"],
         robust_moves=robust,
     ))
     manifest.sort(key=lambda r: r["timestamp"], reverse=True)
