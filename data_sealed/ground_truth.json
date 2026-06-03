@@ -17,57 +17,57 @@
   "channels": {
     "paid_social": {
       "theta": 0.45,
-      "half_sat": 1710000.0,
+      "half_sat": 2610000.0,
       "slope": 1.5,
       "beta": 400.0,
       "imp_per_dollar": 30.0,
       "mean_spend": 45902.286864244095,
-      "mean_contrib": 200.84911624128625
+      "mean_contrib": 141.57689714051602
     },
     "paid_search": {
       "theta": 0.1,
-      "half_sat": 456000.0,
+      "half_sat": 696000.0,
       "slope": 2.2,
       "beta": 270.0,
       "imp_per_dollar": 22.0,
       "mean_spend": 22263.518555996176,
-      "mean_contrib": 111.54083940838882
+      "mean_contrib": 63.78416291115307
     },
     "programmatic_display": {
       "theta": 0.35,
-      "half_sat": 817000.0,
+      "half_sat": 1247000.0,
       "slope": 1.6,
       "beta": 250.0,
       "imp_per_dollar": 25.0,
       "mean_spend": 16440.88650507444,
-      "mean_contrib": 72.06085294474948
+      "mean_contrib": 43.59422485903272
     },
     "influencer": {
       "theta": 0.25,
-      "half_sat": 332500.0,
+      "half_sat": 507500.0,
       "slope": 2.0,
       "beta": 300.0,
       "imp_per_dollar": 8.0,
       "mean_spend": 8995.10959978322,
-      "mean_contrib": 17.155090175857303
+      "mean_contrib": 7.846524597885605
     },
     "dooh": {
       "theta": 0.6,
-      "half_sat": 2375000.0,
+      "half_sat": 3625000.0,
       "slope": 1.3,
       "beta": 200.0,
       "imp_per_dollar": 40.0,
       "mean_spend": 9028.027456682834,
-      "mean_contrib": 32.68505247918545
+      "mean_contrib": 20.405681218295893
     },
     "tv_ctv": {
       "theta": 0.75,
-      "half_sat": 722000.0,
+      "half_sat": 1102000.0,
       "slope": 1.6,
       "beta": 320.0,
       "imp_per_dollar": 9.0,
       "mean_spend": 30364.653801402936,
-      "mean_contrib": 162.87544208865395
+      "mean_contrib": 113.06889862928536
     }
   },
   "avg_contribution_decomposition": {
@@ -78,12 +78,12 @@
     "price": -49.23076923076923,
     "competitor": -2.960594732333751e-15,
     "holiday": 5.1923076923076925,
-    "media_paid_social": 200.84911624128625,
-    "media_paid_search": 111.54083940838882,
-    "media_programmatic_display": 72.06085294474948,
-    "media_influencer": 17.155090175857303,
-    "media_dooh": 32.68505247918545,
-    "media_tv_ctv": 162.87544208865395
+    "media_paid_social": 141.57689714051602,
+    "media_paid_search": 63.78416291115307,
+    "media_programmatic_display": 43.59422485903272,
+    "media_influencer": 7.846524597885605,
+    "media_dooh": 20.405681218295893,
+    "media_tv_ctv": 113.06889862928536
   },
   "experiments": {
     "paid_social": {

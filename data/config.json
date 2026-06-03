@@ -293,6 +293,6 @@
     }
   },
   "seasonal_saturation": false,
-  "saturation_scale": 1.9,
+  "saturation_scale": 2.9,
   "note": "Public config \u2014 contains NO true model parameters (see data_sealed/ for truth)."
 }
