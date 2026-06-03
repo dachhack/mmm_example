@@ -8,8 +8,8 @@
     "comp_coef": -2.2,
     "holiday_effect": 90.0,
     "target_corr_spend_season": 0.6,
-    "realized_corr_totalspend_season": 0.602040745176445,
-    "season_scale": 0.84375
+    "realized_corr_totalspend_season": 0.5958156964205329,
+    "season_scale": 0.71875
   },
   "channels": {
     "tv": {
@@ -18,8 +18,8 @@
       "slope": 1.6,
       "beta": 420.0,
       "imp_per_dollar": 9.0,
-      "mean_spend": 31400.386471701917,
-      "mean_contrib": 378.4055168298192
+      "mean_spend": 32490.519784569682,
+      "mean_contrib": 385.06136628447115
     },
     "search": {
       "theta": 0.1,
@@ -27,8 +27,8 @@
       "slope": 2.0,
       "beta": 300.0,
       "imp_per_dollar": 22.0,
-      "mean_spend": 15892.808564848154,
-      "mean_contrib": 235.79256255899824
+      "mean_spend": 16196.93484037557,
+      "mean_contrib": 244.02239763796433
     },
     "social": {
       "theta": 0.4,
@@ -36,8 +36,8 @@
       "slope": 1.5,
       "beta": 350.0,
       "imp_per_dollar": 30.0,
-      "mean_spend": 26055.621636315584,
-      "mean_contrib": 301.2647348860372
+      "mean_spend": 23317.219751110308,
+      "mean_contrib": 291.5789882107064
     },
     "affiliate": {
       "theta": 0.3,
@@ -45,8 +45,8 @@
       "slope": 2.4,
       "beta": 180.0,
       "imp_per_dollar": 15.0,
-      "mean_spend": 7157.664724160649,
-      "mean_contrib": 137.35177040704968
+      "mean_spend": 6132.657160826631,
+      "mean_contrib": 127.67536713851503
     },
     "brand": {
       "theta": 0.6,
@@ -54,8 +54,8 @@
       "slope": 1.3,
       "beta": 120.0,
       "imp_per_dollar": 12.0,
-      "mean_spend": 5863.782213123337,
-      "mean_contrib": 81.90386124767525
+      "mean_spend": 6124.161628790006,
+      "mean_contrib": 84.05934811293842
     }
   },
   "avg_contribution_decomposition": {
@@ -64,13 +64,13 @@
     "seasonality": 186.53846153846158,
     "promo": 11.538461538461538,
     "price": -49.23076923076923,
-    "competitor": -1.1113617149068234e-14,
+    "competitor": 8.654046140667887e-16,
     "holiday": 5.1923076923076925,
-    "media_tv": 378.4055168298192,
-    "media_search": 235.79256255899824,
-    "media_social": 301.2647348860372,
-    "media_affiliate": 137.35177040704968,
-    "media_brand": 81.90386124767525
+    "media_tv": 385.06136628447115,
+    "media_search": 244.02239763796433,
+    "media_social": 291.5789882107064,
+    "media_affiliate": 127.67536713851503,
+    "media_brand": 84.05934811293842
   },
   "experiments": {
     "tv": {
