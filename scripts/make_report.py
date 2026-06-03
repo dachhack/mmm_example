@@ -621,7 +621,8 @@ def build_index_html(manifest):
 <p>We regenerate the data under different seeds and assumptions to see what survives. Every run measures
 the same things: how badly observational MMM is fooled by the spend↔season confound, how much a per-channel
 geo-experiment repairs it, whether marginal ROI is trustworthy, and what an idealized test-and-learn program
-can actually attain. Open a run for the full report. <a href="../index.html">Interactive dashboard →</a></p>
+can actually attain. Open a run for the full report. <a href="../engines/index.html">Engine leaderboard →</a>
+&nbsp;·&nbsp; <a href="../index.html">Interactive dashboard →</a></p>
 </div></header>
 <main class="wrap"><section>
 <div class="card">{table}</div>
