@@ -400,6 +400,16 @@ img{max-width:100%;border-radius:8px;border:1px solid var(--line);margin:8px 0}
 """
 
 
+def _sat_label(cfg, gt):
+    """Short saturation descriptor: seasonal flag and/or the global saturation scale."""
+    if gt["meta"].get("seasonal_saturation"):
+        return "seasonal"
+    s = cfg.get("saturation_scale", 1.0)
+    if abs(s - 1.0) > 1e-6:
+        return f"{s:g}x ({'headroom' if s > 1 else 'saturated'})"
+    return "stable"
+
+
 def _tbl(headers, rows):
     h = "".join(f"<th>{x}</th>" for x in headers)
     body = "".join("<tr>" + "".join(f"<td>{c}</td>" for c in r) + "</tr>" for r in rows)
@@ -676,7 +686,7 @@ def main():
         pp_coverage=sc_a["fit"]["pp_interval_coverage"],
         assumptions=dict(confound=round(cfg["realized_confound"], 2),
                          baseline_share=f"{gt['avg_contribution_decomposition']['baseline']/df['conversions'].mean():.0%}",
-                         saturation=("seasonal" if gt["meta"].get("seasonal_saturation") else "stable"),
+                         saturation=_sat_label(cfg, gt),
                          weeks=cfg["n_weeks"], markets=cfg["n_markets"]),
     )
     html = build_report_html(meta, before, after, gtd, naive, freq, roi, troi, optim, sim, conv, policies)
