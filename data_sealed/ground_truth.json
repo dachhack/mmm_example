@@ -8,8 +8,8 @@
     "comp_coef": -2.2,
     "holiday_effect": 90.0,
     "target_corr_spend_season": 0.6,
-    "realized_corr_totalspend_season": 0.6024104981606059,
-    "season_scale": 0.8125,
+    "realized_corr_totalspend_season": 0.6044441313544282,
+    "season_scale": 0.53125,
     "seasonal_saturation": false,
     "sat_seasonal_amp": 0.0,
     "season_norm": null
@@ -17,57 +17,57 @@
   "channels": {
     "paid_social": {
       "theta": 0.45,
-      "half_sat": 2610000.0,
+      "half_sat": 900000.0,
       "slope": 1.5,
       "beta": 400.0,
       "imp_per_dollar": 30.0,
-      "mean_spend": 45902.286864244095,
-      "mean_contrib": 141.57689714051602
+      "mean_spend": 44122.85821071993,
+      "mean_contrib": 281.99382601704866
     },
     "paid_search": {
       "theta": 0.1,
-      "half_sat": 696000.0,
+      "half_sat": 240000.0,
       "slope": 2.2,
       "beta": 270.0,
       "imp_per_dollar": 22.0,
-      "mean_spend": 22263.518555996176,
-      "mean_contrib": 63.78416291115307
+      "mean_spend": 22709.01801370858,
+      "mean_contrib": 193.78379957971956
     },
     "programmatic_display": {
       "theta": 0.35,
-      "half_sat": 1247000.0,
+      "half_sat": 430000.0,
       "slope": 1.6,
       "beta": 250.0,
       "imp_per_dollar": 25.0,
-      "mean_spend": 16440.88650507444,
-      "mean_contrib": 43.59422485903272
+      "mean_spend": 16216.875035776548,
+      "mean_contrib": 129.67898466743912
     },
     "influencer": {
       "theta": 0.25,
-      "half_sat": 507500.0,
+      "half_sat": 175000.0,
       "slope": 2.0,
       "beta": 300.0,
       "imp_per_dollar": 8.0,
-      "mean_spend": 8995.10959978322,
-      "mean_contrib": 7.846524597885605
+      "mean_spend": 8962.002264484283,
+      "mean_contrib": 46.45697756712181
     },
     "dooh": {
       "theta": 0.6,
-      "half_sat": 3625000.0,
+      "half_sat": 1250000.0,
       "slope": 1.3,
       "beta": 200.0,
       "imp_per_dollar": 40.0,
-      "mean_spend": 9028.027456682834,
-      "mean_contrib": 20.405681218295893
+      "mean_spend": 8742.390753634312,
+      "mean_contrib": 60.139713101689686
     },
     "tv_ctv": {
       "theta": 0.75,
-      "half_sat": 1102000.0,
+      "half_sat": 380000.0,
       "slope": 1.6,
       "beta": 320.0,
       "imp_per_dollar": 9.0,
-      "mean_spend": 30364.653801402936,
-      "mean_contrib": 113.06889862928536
+      "mean_spend": 28863.38947520444,
+      "mean_contrib": 228.7730139134734
     }
   },
   "avg_contribution_decomposition": {
@@ -76,14 +76,14 @@
     "seasonality": 186.53846153846158,
     "promo": 11.538461538461538,
     "price": -49.23076923076923,
-    "competitor": -2.960594732333751e-15,
+    "competitor": 8.654046140667887e-16,
     "holiday": 5.1923076923076925,
-    "media_paid_social": 141.57689714051602,
-    "media_paid_search": 63.78416291115307,
-    "media_programmatic_display": 43.59422485903272,
-    "media_influencer": 7.846524597885605,
-    "media_dooh": 20.405681218295893,
-    "media_tv_ctv": 113.06889862928536
+    "media_paid_social": 281.99382601704866,
+    "media_paid_search": 193.78379957971956,
+    "media_programmatic_display": 129.67898466743912,
+    "media_influencer": 46.45697756712181,
+    "media_dooh": 60.139713101689686,
+    "media_tv_ctv": 228.7730139134734
   },
   "experiments": {
     "paid_social": {
