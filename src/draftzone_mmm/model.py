@@ -16,32 +16,34 @@ import pandas as pd
 
 from .transforms import geometric_adstock, hill_saturation
 
-CHANNELS = ["tv", "search", "social", "affiliate", "brand"]
+CHANNELS = ["paid_social", "paid_search", "programmatic_display", "influencer", "dooh", "tv_ctv"]
 
 # Truncated-adstock window (lags). Must match the PyMC model's lag matrix so the
 # fit and the numpy reconstruction agree exactly.
 ADSTOCK_L = 12
 
 COLORS = {
-    "tv": "#d62728",
-    "search": "#1f77b4",
-    "social": "#2ca02c",
-    "affiliate": "#ff7f0e",
-    "brand": "#9467bd",
+    "paid_social": "#4267B2",
+    "paid_search": "#1f77b4",
+    "programmatic_display": "#9467bd",
+    "influencer": "#e377c2",
+    "dooh": "#ff7f0e",
+    "tv_ctv": "#d62728",
 }
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 DATA_DIR = REPO / "data"
 ARTIFACTS = REPO / "artifacts"
 
-# Analyst's prior on carryover, expressed as Beta(a, b). NOT the answer key —
-# these encode domain knowledge (TV carries over a lot, search barely).
+# Analyst's prior on carryover, expressed as Beta(a, b). NOT the answer key — these encode
+# domain knowledge (TV/DOOH carry over a lot, search barely, influencer/social in between).
 THETA_PRIOR = {
-    "tv": (6, 2),
-    "search": (1.5, 6),
-    "social": (3, 4),
-    "affiliate": (2, 4),
-    "brand": (4, 3),
+    "paid_social": (3, 4),            # ~0.43
+    "paid_search": (1.2, 7),          # ~0.15
+    "programmatic_display": (2.5, 4.5),  # ~0.36
+    "influencer": (2, 5),             # ~0.29
+    "dooh": (4, 3),                   # ~0.57
+    "tv_ctv": (6, 2),                 # ~0.75
 }
 
 

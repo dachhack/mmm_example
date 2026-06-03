@@ -24,8 +24,9 @@ from .transforms import geometric_adstock, hill_saturation
 
 # Analyst's domain-prior bounds on carryover (NOT truth).
 BOUNDS_THETA = {
-    "tv": (0.3, 0.95), "search": (0.0, 0.5), "social": (0.1, 0.8),
-    "affiliate": (0.0, 0.7), "brand": (0.2, 0.9),
+    "paid_social": (0.1, 0.8), "paid_search": (0.0, 0.4),
+    "programmatic_display": (0.1, 0.7), "influencer": (0.0, 0.6),
+    "dooh": (0.2, 0.9), "tv_ctv": (0.3, 0.95),
 }
 
 

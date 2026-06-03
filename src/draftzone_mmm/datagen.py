@@ -33,24 +33,35 @@ REPO = pathlib.Path(__file__).resolve().parents[2]
 DATA_DIR = REPO / "data"
 SEALED_DIR = REPO / "data_sealed"
 
-CHANNELS = ["tv", "search", "social", "affiliate", "brand"]
+CHANNELS = ["paid_social", "paid_search", "programmatic_display", "influencer", "dooh", "tv_ctv"]
 
 # ----------------------------------------------------------------------
-# TRUE per-channel parameters (the sealed truth). Deliberately DISTINCT so
-# recovery is a genuine test: theta spans low (search .10) -> high (tv .75).
+# TRUE per-channel parameters (the sealed truth) — a PrizePicks-style mix.
+# Deliberately DISTINCT so recovery is a genuine test: theta spans 0.10 -> 0.75.
 # hs/slope live on the IMPRESSION-adstock scale. beta = max conversions/wk.
+# Saturation is set via hs RELATIVE to each channel's impression level:
+#   high-saturation (low headroom): paid_social, paid_search, tv_ctv  -> small hs
+#   headroom (low saturation):      influencer, dooh                  -> large hs
 # ----------------------------------------------------------------------
 CH = {
-    "tv": dict(base_spend=42000, season_coef=9000, flight=True,
-               imp_per_dollar=9.0, noise=0.10, theta=0.75, hs=160000, slope=1.6, beta=420),
-    "search": dict(base_spend=16000, season_coef=5000, flight=False,
-                   imp_per_dollar=22.0, noise=0.06, theta=0.10, hs=120000, slope=2.0, beta=300),
-    "social": dict(base_spend=24000, season_coef=5000, flight=False,
-                   imp_per_dollar=30.0, noise=0.08, theta=0.40, hs=260000, slope=1.5, beta=350),
-    "affiliate": dict(base_spend=9000, season_coef=3000, flight=True,
-                      imp_per_dollar=15.0, noise=0.12, theta=0.30, hs=45000, slope=2.4, beta=180),
-    "brand": dict(base_spend=6000, season_coef=1500, flight=False,
-                  imp_per_dollar=12.0, noise=0.10, theta=0.60, hs=70000, slope=1.3, beta=120),
+    # largest budget, mature -> high saturation, medium carryover
+    "paid_social": dict(base_spend=45000, season_coef=11000, flight=False,
+                        imp_per_dollar=30.0, noise=0.08, theta=0.45, hs=900000, slope=1.5, beta=400),
+    # responsive -> short carryover, fast saturation
+    "paid_search": dict(base_spend=22000, season_coef=6000, flight=False,
+                        imp_per_dollar=22.0, noise=0.06, theta=0.10, hs=240000, slope=2.2, beta=270),
+    # medium carryover / medium saturation
+    "programmatic_display": dict(base_spend=16000, season_coef=4000, flight=False,
+                                imp_per_dollar=25.0, noise=0.10, theta=0.35, hs=430000, slope=1.6, beta=250),
+    # CPA creator + promo codes -> spiky spend, lower saturation (headroom)
+    "influencer": dict(base_spend=12000, season_coef=3500, flight=True,
+                      imp_per_dollar=8.0, noise=0.14, theta=0.25, hs=175000, slope=2.0, beta=300),
+    # billboards/CTV screens -> longer carryover, lower saturation (headroom)
+    "dooh": dict(base_spend=9000, season_coef=2500, flight=False,
+                imp_per_dollar=40.0, noise=0.10, theta=0.60, hs=1250000, slope=1.3, beta=200),
+    # linear + CTV -> long carryover, high saturation
+    "tv_ctv": dict(base_spend=38000, season_coef=10000, flight=True,
+                  imp_per_dollar=9.0, noise=0.10, theta=0.75, hs=380000, slope=1.6, beta=320),
 }
 
 # Controls / baseline truth
@@ -63,11 +74,12 @@ HOLIDAY_EFFECT = 90.0
 
 # Rotating geo-experiment calendar: one randomized test per channel, staggered.
 GEO_CALENDAR = {
-    "social": "2024-Q1",
-    "search": "2024-Q2",
-    "affiliate": "2024-Q3",
-    "brand": "2024-Q4",
-    "tv": "2025-Q1",
+    "paid_social": "2024-Q1",
+    "paid_search": "2024-Q2",
+    "programmatic_display": "2024-Q3",
+    "influencer": "2024-Q4",
+    "dooh": "2025-Q1",
+    "tv_ctv": "2025-Q2",
 }
 
 # Per-channel geo-experiment design. BAU impressions and per-market half-sat are
@@ -75,12 +87,13 @@ GEO_CALENDAR = {
 # an assertion below) — NOT saturated. INCREMENT is the campaign bump (treatment only).
 GEO_DESIGN = {
     # channel: BAU impr/mkt/wk, season sensitivity (~bau/1000, a modest confounding ripple),
-    # increment impr (campaign bump, treatment only), per-market half_sat (~bau -> responsive).
-    "tv": dict(bau=55000, season_sens=55, increment=40000, hs_mkt=80000),
-    "search": dict(bau=42000, season_sens=42, increment=30000, hs_mkt=55000),
-    "social": dict(bau=40000, season_sens=40, increment=30000, hs_mkt=50000),
-    "affiliate": dict(bau=28000, season_sens=28, increment=22000, hs_mkt=35000),
-    "brand": dict(bau=24000, season_sens=24, increment=20000, hs_mkt=32000),
+    # increment impr (campaign bump, treatment only), per-market half_sat (~1.25*bau -> responsive).
+    "paid_social": dict(bau=45000, season_sens=45, increment=31000, hs_mkt=56000),
+    "paid_search": dict(bau=38000, season_sens=38, increment=27000, hs_mkt=48000),
+    "programmatic_display": dict(bau=34000, season_sens=34, increment=24000, hs_mkt=42000),
+    "influencer": dict(bau=22000, season_sens=22, increment=16000, hs_mkt=28000),
+    "dooh": dict(bau=30000, season_sens=30, increment=21000, hs_mkt=38000),
+    "tv_ctv": dict(bau=50000, season_sens=50, increment=35000, hs_mkt=62000),
 }
 
 TARGET_CONFOUND = 0.60

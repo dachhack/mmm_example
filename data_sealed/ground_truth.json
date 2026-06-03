@@ -8,54 +8,63 @@
     "comp_coef": -2.2,
     "holiday_effect": 90.0,
     "target_corr_spend_season": 0.6,
-    "realized_corr_totalspend_season": 0.5958156964205329,
-    "season_scale": 0.71875
+    "realized_corr_totalspend_season": 0.6044441313544282,
+    "season_scale": 0.53125
   },
   "channels": {
-    "tv": {
-      "theta": 0.75,
-      "half_sat": 160000.0,
-      "slope": 1.6,
-      "beta": 420.0,
-      "imp_per_dollar": 9.0,
-      "mean_spend": 32490.519784569682,
-      "mean_contrib": 385.06136628447115
+    "paid_social": {
+      "theta": 0.45,
+      "half_sat": 900000.0,
+      "slope": 1.5,
+      "beta": 400.0,
+      "imp_per_dollar": 30.0,
+      "mean_spend": 44122.85821071993,
+      "mean_contrib": 281.99382601704866
     },
-    "search": {
+    "paid_search": {
       "theta": 0.1,
-      "half_sat": 120000.0,
+      "half_sat": 240000.0,
+      "slope": 2.2,
+      "beta": 270.0,
+      "imp_per_dollar": 22.0,
+      "mean_spend": 22709.01801370858,
+      "mean_contrib": 193.78379957971956
+    },
+    "programmatic_display": {
+      "theta": 0.35,
+      "half_sat": 430000.0,
+      "slope": 1.6,
+      "beta": 250.0,
+      "imp_per_dollar": 25.0,
+      "mean_spend": 16216.875035776548,
+      "mean_contrib": 129.67898466743912
+    },
+    "influencer": {
+      "theta": 0.25,
+      "half_sat": 175000.0,
       "slope": 2.0,
       "beta": 300.0,
-      "imp_per_dollar": 22.0,
-      "mean_spend": 16196.93484037557,
-      "mean_contrib": 244.02239763796433
+      "imp_per_dollar": 8.0,
+      "mean_spend": 8962.002264484283,
+      "mean_contrib": 46.45697756712181
     },
-    "social": {
-      "theta": 0.4,
-      "half_sat": 260000.0,
-      "slope": 1.5,
-      "beta": 350.0,
-      "imp_per_dollar": 30.0,
-      "mean_spend": 23317.219751110308,
-      "mean_contrib": 291.5789882107064
-    },
-    "affiliate": {
-      "theta": 0.3,
-      "half_sat": 45000.0,
-      "slope": 2.4,
-      "beta": 180.0,
-      "imp_per_dollar": 15.0,
-      "mean_spend": 6132.657160826631,
-      "mean_contrib": 127.67536713851503
-    },
-    "brand": {
+    "dooh": {
       "theta": 0.6,
-      "half_sat": 70000.0,
+      "half_sat": 1250000.0,
       "slope": 1.3,
-      "beta": 120.0,
-      "imp_per_dollar": 12.0,
-      "mean_spend": 6124.161628790006,
-      "mean_contrib": 84.05934811293842
+      "beta": 200.0,
+      "imp_per_dollar": 40.0,
+      "mean_spend": 8742.390753634312,
+      "mean_contrib": 60.139713101689686
+    },
+    "tv_ctv": {
+      "theta": 0.75,
+      "half_sat": 380000.0,
+      "slope": 1.6,
+      "beta": 320.0,
+      "imp_per_dollar": 9.0,
+      "mean_spend": 28863.38947520444,
+      "mean_contrib": 228.7730139134734
     }
   },
   "avg_contribution_decomposition": {
@@ -66,62 +75,73 @@
     "price": -49.23076923076923,
     "competitor": 8.654046140667887e-16,
     "holiday": 5.1923076923076925,
-    "media_tv": 385.06136628447115,
-    "media_search": 244.02239763796433,
-    "media_social": 291.5789882107064,
-    "media_affiliate": 127.67536713851503,
-    "media_brand": 84.05934811293842
+    "media_paid_social": 281.99382601704866,
+    "media_paid_search": 193.78379957971956,
+    "media_programmatic_display": 129.67898466743912,
+    "media_influencer": 46.45697756712181,
+    "media_dooh": 60.139713101689686,
+    "media_tv_ctv": 228.7730139134734
   },
   "experiments": {
-    "tv": {
-      "quarter": "2025-Q1",
-      "true_increment_per_market_week": 65.2731264969382,
-      "increment_impr": 40000.0,
-      "n_markets": 80,
-      "T_exp": 20,
-      "pre_period": 6,
-      "camp_end": 18,
-      "market_adstock_over_halfsat": 0.6659273714787846
-    },
-    "search": {
-      "quarter": "2024-Q2",
-      "true_increment_per_market_week": 69.55787347919996,
-      "increment_impr": 30000.0,
-      "n_markets": 80,
-      "T_exp": 20,
-      "pre_period": 6,
-      "camp_end": 18,
-      "market_adstock_over_halfsat": 0.8548247771936026
-    },
-    "social": {
+    "paid_social": {
       "quarter": "2024-Q1",
-      "true_increment_per_market_week": 60.951694745966,
-      "increment_impr": 30000.0,
+      "true_increment_per_market_week": 64.52549061444661,
+      "increment_impr": 31000.0,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 0.8731438920337157
+      "market_adstock_over_halfsat": 0.8708634668345488
     },
-    "affiliate": {
+    "paid_search": {
+      "quarter": "2024-Q2",
+      "true_increment_per_market_week": 67.45595208183036,
+      "increment_impr": 27000.0,
+      "n_markets": 80,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "market_adstock_over_halfsat": 0.8862022739755105
+    },
+    "programmatic_display": {
       "quarter": "2024-Q3",
-      "true_increment_per_market_week": 50.6200178330454,
-      "increment_impr": 22000.0,
+      "true_increment_per_market_week": 44.57754948198095,
+      "increment_impr": 24000.0,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 0.8827601010789935
+      "market_adstock_over_halfsat": 0.8887844661490958
     },
-    "brand": {
+    "influencer": {
       "quarter": "2024-Q4",
-      "true_increment_per_market_week": 18.664806715344902,
-      "increment_impr": 20000.0,
+      "true_increment_per_market_week": 68.86157473285911,
+      "increment_impr": 16000.0,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 0.7864582137439509
+      "market_adstock_over_halfsat": 0.8707625831794851
+    },
+    "dooh": {
+      "quarter": "2025-Q1",
+      "true_increment_per_market_week": 27.074315082066647,
+      "increment_impr": 21000.0,
+      "n_markets": 80,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "market_adstock_over_halfsat": 0.827850751309422
+    },
+    "tv_ctv": {
+      "quarter": "2025-Q2",
+      "true_increment_per_market_week": 47.967253765343706,
+      "increment_impr": 35000.0,
+      "n_markets": 80,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "market_adstock_over_halfsat": 0.7811464768079583
     }
   }
 }
