@@ -294,5 +294,7 @@
   },
   "seasonal_saturation": false,
   "saturation_scale": 1.0,
+  "hetero_geos": true,
+  "hetero_sigma": 0.12,
   "note": "Public config \u2014 contains NO true model parameters (see data_sealed/ for truth)."
 }

@@ -294,11 +294,18 @@ def generate_national(seed=2024, seasonal_saturation=False, saturation_scale=1.0
 # ----------------------------------------------------------------------
 # Rotating geo-experiment panel
 # ----------------------------------------------------------------------
-def generate_geo_experiments(seed=808, T_exp=20, pre_period=6, camp_len=12):
+def generate_geo_experiments(seed=808, T_exp=20, pre_period=6, camp_len=12,
+                             national_sat=None, hetero_sigma=0.0):
     """One randomized geo-experiment per channel, staggered across the calendar.
 
-    Returns (tidy_dataframe, truth_dict, assignment_dict). Units are chosen so markets
-    sit on the responsive part of the Hill curve (verified by an assertion).
+    Returns (tidy_dataframe, truth_dict, assignment_dict).
+
+    Default (hetero_sigma=0): every market sits at ~half-saturation (powered, responsive).
+    Heterogeneous mode (hetero_sigma>0 + national_sat): each market's operating saturation is
+    drawn ~ Normal(channel's national saturation, hetero_sigma), so the test markets SCATTER around
+    the national operating point (big metros saturated, small DMAs with headroom). Centering the
+    geos on national means the pooled lift measures ~the national marginal — the normalization that
+    makes the experiment->model translation honest.
     """
     rows = []
     exp_truth = {}
@@ -307,13 +314,12 @@ def generate_geo_experiments(seed=808, T_exp=20, pre_period=6, camp_len=12):
     for ci, channel in enumerate(CHANNELS):
         p = CH[channel]
         g = GEO_DESIGN[channel]
+        hs, slope, theta, beta = g["hs_mkt"], p["slope"], p["theta"], p["beta"]
         rng = np.random.default_rng(seed + 101 * (ci + 1))
         week = np.arange(T_exp)
         camp_end = min(pre_period + camp_len, T_exp)
         in_campaign = (week >= pre_period) & (week < camp_end)
-
-        # Shared seasonal confounder across markets (persists at market level).
-        season = 250 * (0.5 + 0.5 * np.sin(2 * np.pi * (week - 3) / T_exp))
+        season = 250 * (0.5 + 0.5 * np.sin(2 * np.pi * (week - 3) / T_exp))  # shared confounder
 
         market_base = rng.normal(320, 55, N_MARKETS)
         perm = rng.permutation(N_MARKETS)
@@ -321,55 +327,57 @@ def generate_geo_experiments(seed=808, T_exp=20, pre_period=6, camp_len=12):
         treat_mask = np.zeros(N_MARKETS, bool)
         treat_mask[treat_idx] = True
 
-        def market_impr(treated, g=g):
-            bau = g["bau"] + g["season_sens"] * season + rng.normal(0, g["bau"] * 0.12, T_exp)
-            bau = np.clip(bau, 0, None)
-            extra = np.where(in_campaign, g["increment"], 0.0) if treated else np.zeros(T_exp)
-            return bau + extra
+        hetero = hetero_sigma > 0 and national_sat is not None
+        if hetero:
+            # per-market mean adstocked exposure that lands each market at target saturation f_m
+            f = np.clip(rng.normal(national_sat[channel], hetero_sigma, N_MARKETS), 0.03, 0.92)
+            a_target = hs * (f / (1 - f)) ** (1.0 / slope)
+            increment = 0.7 * a_target                      # per-market campaign bump (impr)
+            season_ripple = 0.10 * a_target[:, None] * (season / season.max())[None, :]
+            base = a_target[:, None] + season_ripple        # N_MARKETS x T_exp mean BAU
+        else:
+            a_target = np.full(N_MARKETS, g["bau"], float)
+            increment = np.full(N_MARKETS, g["increment"], float)
+            base = (g["bau"] + g["season_sens"] * season)[None, :].repeat(N_MARKETS, 0)
 
-        def contrib(impr, g=g, p=p):
-            ad = geometric_adstock(impr, p["theta"], normalize=True)
-            sat = hill_saturation(ad, g["hs_mkt"], p["slope"])
-            return p["beta"] * sat
+        def contrib(impr):
+            return beta * hill_saturation(geometric_adstock(impr, theta, normalize=True), hs, slope)
 
-        # Verify units: mean adstocked impressions within ~0.3-2x of per-market half_sat.
-        mean_bau = g["bau"] + g["season_sens"] * season
-        mean_ad = geometric_adstock(mean_bau, p["theta"], normalize=True).mean()
-        ratio = mean_ad / g["hs_mkt"]
-        assert 0.3 <= ratio <= 2.0, (
-            f"{channel}: market adstock/half_sat ratio {ratio:.2f} outside responsive band "
-            "(would saturate the market and kill the lift)"
-        )
-
+        true_incs, ratios, fracs = [], [], []
         for m in range(N_MARKETS):
             treated = bool(treat_mask[m])
-            impr = market_impr(treated)
-            spend = impr / p["imp_per_dollar"]  # nominal spend at channel efficiency
+            mean_bau = base[m]
+            bau = np.clip(mean_bau + rng.normal(0, a_target[m] * 0.12, T_exp), 0, None)
+            extra = np.where(in_campaign, increment[m], 0.0) if treated else np.zeros(T_exp)
+            impr = bau + extra
+            spend = impr / p["imp_per_dollar"]
             conv = market_base[m] + season + contrib(impr) + rng.normal(0, 15, T_exp)
             for w in range(T_exp):
                 rows.append(dict(
                     channel=channel, market=m, week=int(w), treated=int(treated),
-                    spend=float(spend[w]), impressions=float(impr[w]),
-                    conversions=float(conv[w]),
-                    campaign_window=int(bool(in_campaign[w])),
-                    pre_period=int(w < pre_period),
+                    spend=float(spend[w]), impressions=float(impr[w]), conversions=float(conv[w]),
+                    campaign_window=int(bool(in_campaign[w])), pre_period=int(w < pre_period),
                 ))
+            inc_with = contrib(np.where(in_campaign, mean_bau + increment[m], mean_bau))
+            inc_without = contrib(mean_bau)
+            true_incs.append(float((inc_with - inc_without)[in_campaign].mean()))
+            ad_m = geometric_adstock(mean_bau, theta, normalize=True).mean()
+            ratios.append(ad_m / hs)
+            fracs.append(float(hill_saturation(np.array([ad_m]), hs, slope)[0]))
 
-        # TRUE incremental effect (deterministic, mean BAU) over the campaign window.
-        inc_with = contrib(np.where(in_campaign, mean_bau + g["increment"], mean_bau))
-        inc_without = contrib(mean_bau)
-        true_inc = float((inc_with - inc_without)[in_campaign].mean())
+        ratio = float(np.mean(ratios))
+        assert 0.2 <= ratio <= 3.0, (f"{channel}: mean market adstock/half_sat {ratio:.2f} off-band")
         exp_truth[channel] = dict(
             quarter=GEO_CALENDAR[channel],
-            true_increment_per_market_week=true_inc,
-            increment_impr=float(g["increment"]),
+            true_increment_per_market_week=float(np.mean(true_incs)),
+            increment_impr=float(np.mean(increment)),
             n_markets=N_MARKETS, T_exp=T_exp, pre_period=pre_period, camp_end=int(camp_end),
-            market_adstock_over_halfsat=float(ratio),
+            market_adstock_over_halfsat=ratio,
+            market_saturation_mean=float(np.mean(fracs)),
+            market_saturation_sd=float(np.std(fracs)),
         )
-        assignments[channel] = dict(
-            seed=int(seed + 101 * (ci + 1)),
-            treated_markets=sorted(int(x) for x in treat_idx),
-        )
+        assignments[channel] = dict(seed=int(seed + 101 * (ci + 1)),
+                                    treated_markets=sorted(int(x) for x in treat_idx))
 
     geo_df = pd.DataFrame(rows)
     return geo_df, exp_truth, assignments
@@ -384,6 +392,10 @@ def main():
                     help="time-varying saturation (channels more saturated at the NFL peak)")
     ap.add_argument("--saturation-scale", type=float, default=1.0,
                     help=">1 = less saturated / more headroom; <1 = more saturated")
+    ap.add_argument("--hetero-geos", action="store_true",
+                    help="test markets scatter (normal) around each channel's national saturation")
+    ap.add_argument("--hetero-sigma", type=float, default=0.12,
+                    help="std of per-market saturation around national (with --hetero-geos)")
     args = ap.parse_args()
 
     data_dir = pathlib.Path(args.data_dir)
@@ -393,7 +405,11 @@ def main():
 
     nat_df, truth = generate_national(seed=args.seed, seasonal_saturation=args.seasonal_saturation,
                                       saturation_scale=args.saturation_scale)
-    geo_df, exp_truth, assignments = generate_geo_experiments(seed=args.seed // 2 + 808)
+    national_sat = {c: truth["channels"][c]["mean_contrib"] / truth["channels"][c]["beta"]
+                    for c in CHANNELS}
+    geo_df, exp_truth, assignments = generate_geo_experiments(
+        seed=args.seed // 2 + 808, national_sat=national_sat,
+        hetero_sigma=(args.hetero_sigma if args.hetero_geos else 0.0))
     truth["experiments"] = exp_truth
 
     nat_df.to_csv(data_dir / "national_weekly.csv", index=False)
@@ -410,6 +426,8 @@ def main():
         geo_assignments=assignments,
         seasonal_saturation=bool(args.seasonal_saturation),
         saturation_scale=float(args.saturation_scale),
+        hetero_geos=bool(args.hetero_geos),
+        hetero_sigma=float(args.hetero_sigma) if args.hetero_geos else 0.0,
         note="Public config — contains NO true model parameters (see data_sealed/ for truth).",
     )
     with open(data_dir / "config.json", "w") as f:
