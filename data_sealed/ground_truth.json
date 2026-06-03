@@ -88,75 +88,75 @@
   "experiments": {
     "paid_social": {
       "quarter": "2024-Q1",
-      "true_increment_per_market_week": 46.89191743937604,
-      "increment_impr": 77225.87050912264,
+      "true_increment_per_market_week": 3.0823908086295133,
+      "increment_impr": 44693.49519811115,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 1.9876816724376982,
-      "market_saturation_mean": 0.6973838461198297,
-      "market_saturation_sd": 0.1133858031111826
+      "market_adstock_over_halfsat": 1.9062240487577427,
+      "market_saturation_mean": 0.7210556346240103,
+      "market_saturation_sd": 0.0373228714036439
     },
     "paid_search": {
       "quarter": "2024-Q2",
-      "true_increment_per_market_week": 41.26841556361334,
-      "increment_impr": 54965.93267576313,
+      "true_increment_per_market_week": 2.303441726443873,
+      "increment_impr": 16288.858825063468,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 1.7085767986225726,
-      "market_saturation_mean": 0.7280239170270889,
-      "market_saturation_sd": 0.11979187334877248
+      "market_adstock_over_halfsat": 1.776700669423218,
+      "market_saturation_mean": 0.7722293014187389,
+      "market_saturation_sd": 0.05458778461010004
     },
     "programmatic_display": {
       "quarter": "2024-Q3",
-      "true_increment_per_market_week": 42.11802390270971,
-      "increment_impr": 34075.90967680365,
+      "true_increment_per_market_week": 2.7245741732500455,
+      "increment_impr": 13656.96326842393,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 1.1857144435172118,
-      "market_saturation_mean": 0.541239325055798,
-      "market_saturation_sd": 0.11477019399000152
+      "market_adstock_over_halfsat": 1.131024414129699,
+      "market_saturation_mean": 0.546238542130968,
+      "market_saturation_sd": 0.04374912917942473
     },
     "influencer": {
       "quarter": "2024-Q4",
-      "true_increment_per_market_week": 47.399070062251404,
-      "increment_impr": 7821.584120712333,
+      "true_increment_per_market_week": 3.263672808819829,
+      "increment_impr": 2318.830981454773,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 0.4123480546709817,
-      "market_saturation_mean": 0.1540082333520075,
-      "market_saturation_sd": 0.09492787157335114
+      "market_adstock_over_halfsat": 0.4083461517541502,
+      "market_saturation_mean": 0.1437433060846559,
+      "market_saturation_sd": 0.028967799393682696
     },
     "dooh": {
       "quarter": "2025-Q1",
-      "true_increment_per_market_week": 26.163555190081354,
-      "increment_impr": 15097.219192978751,
+      "true_increment_per_market_week": 1.7505475901482594,
+      "increment_impr": 11862.608874131683,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 0.5530610994460078,
-      "market_saturation_mean": 0.3052956974069926,
-      "market_saturation_sd": 0.10801761907941493
+      "market_adstock_over_halfsat": 0.5221218280398727,
+      "market_saturation_mean": 0.29974176797500995,
+      "market_saturation_sd": 0.029884136013966636
     },
     "tv_ctv": {
       "quarter": "2025-Q2",
-      "true_increment_per_market_week": 34.03800972886265,
-      "increment_impr": 82978.82253940272,
+      "true_increment_per_market_week": 2.074596889503988,
+      "increment_impr": 8788.677179578022,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 1.7164266217211548,
-      "market_saturation_mean": 0.6808818936223092,
-      "market_saturation_sd": 0.09826533024555292
+      "market_adstock_over_halfsat": 1.791870648671806,
+      "market_saturation_mean": 0.7152232604344329,
+      "market_saturation_sd": 0.03239116188940766
     }
   }
 }
