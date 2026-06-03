@@ -283,7 +283,7 @@ for how the same gremlins — confound, prior scale, marginal-vs-average — dri
     (OUT / "index.html").write_text(html, encoding="utf-8")
     print("Leaderboard (best→worst by MAE/channel):")
     for r in rows:
-        print(f"  {r[0]:30s} R²={r[2]} MAE={r[3]} bias={r[4]} CIs={r[5]}")
+        print(f"  {r[0]:30s} [{r[1]:5s}] R²={r[3]} MAE={r[4]} bias={r[5]} CIs={r[6]}")
     print(f"Wrote {OUT/'index.html'}")
 
 
