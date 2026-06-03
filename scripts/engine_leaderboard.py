@@ -10,6 +10,8 @@ data_sealed/ to score. It lives in scripts/, outside the pipeline the no-truth-l
 from __future__ import annotations
 
 import json
+import pathlib
+import sys
 
 import matplotlib
 import numpy as np
@@ -17,7 +19,8 @@ import numpy as np
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
-import scripts.make_report as mr  # noqa: E402  (reuse CSS + table helper)
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+import make_report as mr  # noqa: E402  (reuse CSS + table helper; sibling in scripts/)
 from draftzone_mmm.fit_freq import fit as freq_fit  # noqa: E402
 from draftzone_mmm.model import (  # noqa: E402
     ARTIFACTS,
