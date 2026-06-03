@@ -18,9 +18,8 @@ jobs:
             echo "::error::docs/data/ is empty. Run scripts/run_fits.sh on the VM first (see docs/INFRA.md)."
             exit 1
           fi
-      # Enables GitHub Pages for the repo (source: Actions) on first run — no manual setting needed.
-      - uses: actions/configure-pages@v5
-        with: { enablement: true }
+      # NOTE: enable Pages once in repo Settings -> Pages -> Source: "GitHub Actions".
+      # (The default GITHUB_TOKEN cannot create the Pages site automatically.)
       - uses: actions/setup-node@v4
         with: { node-version: "20" }
       - name: Build dashboard
