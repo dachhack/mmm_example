@@ -66,9 +66,29 @@ def scale_correct_roi_prior(df, sigma=0.7):
                          scale=np.full(len(CHANNELS), sigma, "float32"))
 
 
+def experiment_mroi_prior(sigma=0.4):
+    """Per-channel MARGINAL-ROI prior from the geo experiments. A lift test measures the
+    incremental KPI from incremental spend — i.e. mROI, not average ROI — so this is the prior
+    Meridian's lift-calibration should target (the naive average-ROI calibration over-credited).
+    mROI_c = causal DiD conversions / incremental campaign spend (both per market-week)."""
+    import pandas as pd
+    from tensorflow_probability import distributions as tfd
+    geo = pd.read_csv(REPO / "data" / "geo_experiments.csv")
+    anchors = json.load(open(REPO / "artifacts" / "anchors.json"))["anchors"]
+    means = []
+    for c in CHANNELS:
+        camp = geo[(geo.channel == c) & (geo.campaign_window == 1)]
+        inc_spend = camp[camp.treated == 1].spend.mean() - camp[camp.treated == 0].spend.mean()
+        means.append(max(anchors[c]["did"] / inc_spend, 1e-6))
+    loc = (np.log(np.asarray(means)) - 0.5 * sigma ** 2).astype("float32")
+    return tfd.LogNormal(loc=loc, scale=np.full(len(CHANNELS), sigma, "float32")), means
+
+
 def main():
     ap = argparse.ArgumentParser(description="Fit Google Meridian and write the engine contract.")
     ap.add_argument("--out", default=str(REPO / "artifacts" / "meridian_results.json"))
+    ap.add_argument("--calibrate", action="store_true",
+                    help="experiment-calibrate via mROI prior from the geo anchors")
     ap.add_argument("--chains", type=int, default=2)
     ap.add_argument("--adapt", type=int, default=500)
     ap.add_argument("--burnin", type=int, default=500)
@@ -82,8 +102,16 @@ def main():
     df = pd.read_csv(REPO / "data" / "national_weekly.csv")
     T = len(df)
     data = build_input_data(df)
-    ms = spec.ModelSpec(max_lag=args.max_lag, paid_media_prior_type="roi",
-                        prior=pdist.PriorDistribution(roi_m=scale_correct_roi_prior(df)))
+    if args.calibrate:
+        mroi_prior, mroi_means = experiment_mroi_prior()
+        print("Experiment mROI prior (conv/$):", {c: round(m, 5) for c, m in zip(CHANNELS, mroi_means)})
+        ms = spec.ModelSpec(max_lag=args.max_lag, paid_media_prior_type="mroi",
+                            prior=pdist.PriorDistribution(mroi_m=mroi_prior))
+        engine = "google_meridian_calibrated"
+    else:
+        ms = spec.ModelSpec(max_lag=args.max_lag, paid_media_prior_type="roi",
+                            prior=pdist.PriorDistribution(roi_m=scale_correct_roi_prior(df)))
+        engine = "google_meridian"
     mmm = model.Meridian(input_data=data, model_spec=ms)
     mmm.sample_prior(100, seed=1)
     print("Sampling Meridian posterior (TFP NUTS)...", flush=True)
@@ -102,7 +130,7 @@ def main():
                 float(io.sel(channel=c, metric="ci_hi")) / T],
         )
     results = dict(
-        engine="google_meridian",
+        engine=engine,
         bayesian=True,
         fit=dict(r2=float(pa["value"].sel(metric="R_Squared").values.item()),
                  mape=float(pa["value"].sel(metric="MAPE").values.item())),

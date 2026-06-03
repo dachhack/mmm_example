@@ -40,6 +40,7 @@ ENGINE_COLOR = {
     "pymc_obs": "#7fb3ff",
     "pymc_anchored": "#1f77b4",
     "google_meridian": "#2ca02c",
+    "google_meridian_calibrated": "#17a589",
 }
 
 
@@ -119,11 +120,12 @@ def main():
     engines = [naive_results(df), freq_results(df),
                pymc_results(df, ARTIFACTS / "idata.nc", "DraftZone PyMC (obs)", "pymc_obs"),
                pymc_results(df, ARTIFACTS / "idata_anchored.nc", "DraftZone PyMC (anchored)", "pymc_anchored")]
-    mer = ARTIFACTS / "meridian_results.json"
-    if mer.exists():
-        m = json.load(open(mer))
-        m["label"] = "Google Meridian"
-        engines.append(m)
+    for path, label in [(ARTIFACTS / "meridian_results.json", "Google Meridian"),
+                        (ARTIFACTS / "meridian_calibrated_results.json", "Google Meridian (exp-calibrated)")]:
+        if path.exists():
+            m = json.load(open(path))
+            m["label"] = label
+            engines.append(m)
 
     OUT.mkdir(parents=True, exist_ok=True)
     fig_leaderboard(OUT / "leaderboard.png", engines, gtd)
