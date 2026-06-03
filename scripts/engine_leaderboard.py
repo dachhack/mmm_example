@@ -208,10 +208,17 @@ def main():
             parts.append(f"the multi-geo panel (MAE {ge:.0f})")
         verdict = ""
         if ge is not None:
-            verdict = (" Fitting the <b>geo panel</b> — what Meridian is actually built for — is the "
-                       f"{'clear winner' if ge <= min(x for x in [fo, ak] if x is not None) else 'fairest setup'}: "
-                       "spend that varies across geos within a week breaks the spend↔season confound "
-                       "with cross-sectional identification the national series cannot provide.")
+            ge_e = next(e for e in engines if e["engine"] == "google_meridian_geo")
+            ge_g = grade(ge_e, gtd)
+            verdict = (" Fitting the <b>geo panel</b> — what Meridian is actually built for — wins on "
+                       f"accuracy (MAE {ge:.0f}): spend that varies across geos within a week breaks the "
+                       "spend↔season confound with cross-sectional identification the national series "
+                       "cannot provide, and the extra data shrinks the intervals sharply. The catch: "
+                       f"those tight intervals only cover truth {ge_g['hits']}/{ge_g['n_ci']} times — geo "
+                       "data buys <i>precision</i>, not immunity from bias, so residual error shows up as "
+                       "<i>confidently</i> wrong channels (here paid_search and influencer). The best-"
+                       f"calibrated setup is still national AKS (bias ~0%, {grade(next(e for e in engines if e['engine']=='google_meridian_aks'), gtd)['hits']}/"
+                       f"{grade(next(e for e in engines if e['engine']=='google_meridian_aks'), gtd)['n_ci']} CIs).")
         mer_note = (
             '<div class="callout"><b>Meridian, configured three ways.</b> Same scale-corrected ROI '
             "prior, three seasonality/geo setups: " + "; ".join(parts) + "."
