@@ -40,8 +40,19 @@ ENGINE_COLOR = {
     "pymc_obs": "#7fb3ff",
     "pymc_anchored": "#1f77b4",
     "google_meridian": "#2ca02c",
+    "google_meridian_aks": "#98df8a",
+    "google_meridian_geo": "#0b6e0b",
     "google_meridian_calibrated": "#17a589",
+    "google_meridian_calibrated_geo": "#0aa3a3",
     "spend_ladder": "#d62728",
+}
+# Stable display labels for every Meridian variant (engine id -> label).
+MERIDIAN_LABELS = {
+    "google_meridian": "Google Meridian (national, Fourier)",
+    "google_meridian_aks": "Meridian (national, AKS)",
+    "google_meridian_geo": "Meridian (geo panel)",
+    "google_meridian_calibrated": "Meridian (naive lift→prior)",
+    "google_meridian_calibrated_geo": "Meridian (geo, calibrated)",
 }
 
 
@@ -121,13 +132,22 @@ def main():
     engines = [naive_results(df), freq_results(df),
                pymc_results(df, ARTIFACTS / "idata.nc", "DraftZone PyMC (obs)", "pymc_obs"),
                pymc_results(df, ARTIFACTS / "idata_anchored.nc", "DraftZone PyMC (anchored)", "pymc_anchored")]
-    for path, label in [(ARTIFACTS / "meridian_results.json", "Google Meridian"),
-                        (ARTIFACTS / "meridian_calibrated_results.json", "Meridian (naive lift→prior)"),
-                        (ARTIFACTS / "ladder_results.json", "Spend ladder (curve fit)")]:
-        if path.exists():
-            m = json.load(open(path))
-            m["label"] = label
-            engines.append(m)
+    # auto-discover every Meridian variant written to artifacts/ (google_meridian*.json), plus
+    # the legacy filenames and the spend-ladder engine.
+    seen = set()
+    for path in sorted(ARTIFACTS.glob("google_meridian*.json")) + [
+            ARTIFACTS / "meridian_results.json", ARTIFACTS / "meridian_calibrated_results.json",
+            ARTIFACTS / "ladder_results.json"]:
+        if not path.exists():
+            continue
+        m = json.load(open(path))
+        if m["engine"] in seen:
+            continue
+        seen.add(m["engine"])
+        m["label"] = MERIDIAN_LABELS.get(m["engine"], m.get("label", m["engine"]))
+        if m["engine"] == "spend_ladder":
+            m["label"] = "Spend ladder (curve fit)"
+        engines.append(m)
 
     OUT.mkdir(parents=True, exist_ok=True)
     fig_leaderboard(OUT / "leaderboard.png", engines, gtd)
@@ -174,6 +194,30 @@ def main():
             'It is also the most expensive option. <a href="../ladder/index.html">See the curves '
             "and the honest cost/time analysis →</a></div>")
 
+    def _mae(eng_id):
+        e = next((e for e in engines if e["engine"] == eng_id), None)
+        return grade(e, gtd)["mae"] if e else None
+
+    mer_note = ""
+    fo, ak, ge = _mae("google_meridian"), _mae("google_meridian_aks"), _mae("google_meridian_geo")
+    if fo is not None and (ak is not None or ge is not None):
+        parts = [f"national + Fourier controls (MAE {fo:.0f})"]
+        if ak is not None:
+            parts.append(f"national + Meridian's own AKS knots, no Fourier (MAE {ak:.0f})")
+        if ge is not None:
+            parts.append(f"the multi-geo panel (MAE {ge:.0f})")
+        verdict = ""
+        if ge is not None:
+            verdict = (" Fitting the <b>geo panel</b> — what Meridian is actually built for — is the "
+                       f"{'clear winner' if ge <= min(x for x in [fo, ak] if x is not None) else 'fairest setup'}: "
+                       "spend that varies across geos within a week breaks the spend↔season confound "
+                       "with cross-sectional identification the national series cannot provide.")
+        mer_note = (
+            '<div class="callout"><b>Meridian, configured three ways.</b> Same scale-corrected ROI '
+            "prior, three seasonality/geo setups: " + "; ".join(parts) + "."
+            + verdict + " The Fourier workaround and AKS are two roads to the same end on national "
+            "data; geo data is the principled fix." + "</div>")
+
     gt_total = sum(gtd[f"media_{c}"] for c in CHANNELS)
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -191,6 +235,7 @@ point-estimate engines (naive, frequentist) have no credible intervals; the Baye
 <main class="wrap"><section>
 <div class="card"><img src="leaderboard.png" alt="engine comparison">
 {table}
+{mer_note}
 {ladder_note}
 {calib_note}
 <p class="small">All engines share the same Fourier-seasonality control set and public data — no

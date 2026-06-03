@@ -499,6 +499,93 @@ def generate_spend_ladder(seed=909, T_exp=20, pre_period=6, camp_len=12,
     return pd.DataFrame(rows), ladder_truth, float(size_frac)
 
 
+# ----------------------------------------------------------------------
+# National geo PANEL (for geo-level engines like Meridian)
+# ----------------------------------------------------------------------
+def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30):
+    """Decompose the national series into a multi-geo panel for geo-level MMM engines.
+
+    Meridian (and geo MMMs generally) are built for geo×time data: spend that varies ACROSS geos
+    within a week supplies cross-sectional identification the national time series cannot — it is
+    the principled way to break the spend↔season confound. We split each channel's national weekly
+    impressions across ``n_geos`` geos so they SUM BACK to the national series (grading stays on the
+    same answer key), but each geo gets an idiosyncratic, season-decorrelated spend multiplier so
+    the panel actually carries that cross-sectional signal.
+
+    Geo g is a population-weighted scaled replica: per-capita exposure = national per-capita ×
+    idiosyncratic multiplier, contribution = size_g × beta × Hill(adstock(per-capita)). Because Hill
+    is concave, the summed geo contribution is a hair below the national contribution (an honest
+    aggregation/Jensen gap, reported in the sealed truth). Returns (panel_df, geo_truth).
+    """
+    rng = np.random.default_rng(seed)
+    T = len(nat_df)
+    week = nat_df["week"].to_numpy()
+    week_idx = np.arange(T)
+    ctrl = _national_controls(week_idx)
+    seasonality = ctrl["seasonality"]
+    comp = nat_df["competitor_pressure"].to_numpy()
+    nonmedia = (BASELINE + ctrl["trend"] + seasonality + ctrl["promo_contrib"]
+                + ctrl["price_contrib"] + COMP_COEF * (comp - comp.mean())
+                + HOLIDAY_EFFECT * nat_df["holiday_flag"].to_numpy())
+
+    size = np.exp(rng.normal(0, 0.45, n_geos))
+    size = size / size.sum()                       # population shares, sum to 1
+
+    rows = []
+    summed_contrib = {c: np.zeros(T) for c in CHANNELS}
+    for c in CHANNELS:
+        p = CH[c]
+        I_c = nat_df[f"{c}_impressions"].to_numpy(float)         # national impressions
+        percap_nat = I_c                                         # national per-capita exposure level
+        # idiosyncratic, time-varying geo multipliers, normalised so geo impressions sum to national
+        m_raw = np.exp(rng.normal(0, idio_sigma, (n_geos, T)))
+        w = size[:, None] * m_raw
+        share = w / w.sum(axis=0, keepdims=True)                 # geo share of national impr each week
+        I_g = share * I_c[None, :]                               # geo impressions, sum_g = I_c
+        hs_used = truth["channels"][c]["half_sat"]               # effective half-sat (matches national)
+        for g in range(n_geos):
+            percap = np.divide(I_g[g], size[g])                  # geo per-capita exposure
+            ad = geometric_adstock(percap, p["theta"])           # non-normalized (matches national)
+            contrib = size[g] * p["beta"] * hill_saturation(ad, hs_used, p["slope"])
+            summed_contrib[c] += contrib
+            # stash per (g,c)
+            for t in range(T):
+                rows.append((g, t, c, float(I_g[g, t]), float(I_g[g, t] / p["imp_per_dollar"]),
+                             float(contrib[t])))
+
+    # assemble wide geo panel
+    import collections
+    by_gt = collections.defaultdict(dict)
+    contrib_gt = collections.defaultdict(float)
+    for g, t, c, imp, spend, contrib in rows:
+        by_gt[(g, t)][f"{c}_impressions"] = imp
+        by_gt[(g, t)][f"{c}_spend"] = spend
+        contrib_gt[(g, t)] += contrib
+
+    panel = []
+    for g in range(n_geos):
+        for t in range(T):
+            base = nonmedia[t] * size[g]
+            conv = base + contrib_gt[(g, t)] + rng.normal(0, 0.06 * max(base, 1.0))
+            row = dict(geo=f"geo_{g:03d}", week=week[t], population=float(size[g]),
+                       conversions=float(max(conv, 0.0)),
+                       promo_flag=float(ctrl["promo_flag"][t]),
+                       price_index=float(ctrl["price_index"][t]),
+                       competitor_pressure=float(comp[t]),
+                       holiday_flag=float(nat_df["holiday_flag"].to_numpy()[t]))
+            row.update(by_gt[(g, t)])
+            panel.append(row)
+    panel_df = pd.DataFrame(panel)
+
+    geo_truth = dict(
+        n_geos=n_geos, idio_sigma=float(idio_sigma),
+        avg_contribution_decomposition={c: float(summed_contrib[c].mean()) for c in CHANNELS},
+        note="Geo-world truth: summed-across-geos avg weekly contribution per channel. Slightly "
+             "below the national truth by the Hill aggregation (Jensen) gap.",
+    )
+    return panel_df, geo_truth
+
+
 def main():
     ap = argparse.ArgumentParser(description="Generate DraftZone v2 synthetic data.")
     ap.add_argument("--seed", type=int, default=2024)
@@ -517,6 +604,10 @@ def main():
                          "each channel's response curve (several spend levels) instead of assuming it")
     ap.add_argument("--ladder-size-frac", type=float, default=0.06,
                     help="aggregate share of national scale each ladder test market represents")
+    ap.add_argument("--geo-panel", action="store_true",
+                    help="also emit data/geo_panel.csv: a multi-geo panel (geos sum to national) "
+                         "for geo-level engines like Meridian")
+    ap.add_argument("--n-geos", type=int, default=50)
     args = ap.parse_args()
 
     data_dir = pathlib.Path(args.data_dir)
@@ -551,6 +642,12 @@ def main():
         truth["spend_ladder"] = ladder_truth
         ladder_df.to_csv(data_dir / "spend_ladder.csv", index=False)
 
+    if args.geo_panel:
+        panel_df, geo_truth = generate_geo_panel(nat_df, truth, seed=args.seed // 3 + 606,
+                                                 n_geos=args.n_geos)
+        truth["geo_panel"] = geo_truth
+        panel_df.to_csv(data_dir / "geo_panel.csv", index=False)
+
     config = dict(
         seed=args.seed,
         n_weeks=T_NATIONAL,
@@ -567,6 +664,8 @@ def main():
         spend_ladder=bool(args.spend_ladder),
         ladder_levels=list(map(float, LADDER_LEVELS)) if args.spend_ladder else None,
         ladder_size_frac=float(ladder_size_frac) if ladder_size_frac is not None else None,
+        geo_panel=bool(args.geo_panel),
+        n_geos=int(args.n_geos) if args.geo_panel else None,
         note="Public config — contains NO true model parameters (see data_sealed/ for truth).",
     )
     with open(data_dir / "config.json", "w") as f:
@@ -581,6 +680,11 @@ def main():
     if args.spend_ladder:
         print(f"Wrote {data_dir/'spend_ladder.csv'} "
               f"({len(LADDER_LEVELS)}-cell ladder/channel, size_frac={ladder_size_frac})")
+    if args.geo_panel:
+        gp = truth["geo_panel"]["avg_contribution_decomposition"]
+        print(f"Wrote {data_dir/'geo_panel.csv'} ({args.n_geos} geos; "
+              f"geo media total {sum(gp.values()):.0f} vs national "
+              f"{sum(truth['avg_contribution_decomposition'][f'media_{c}'] for c in CHANNELS):.0f} conv/wk)")
     print(f"Realized confound corr(total spend, season) = {corr:.3f}  (target {TARGET_CONFOUND})")
     print(f"Baseline share of conversions ~ {base_share:.0%}")
     print("Sealed truth written to data_sealed/ground_truth.json (pipeline must not read it).")

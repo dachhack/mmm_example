@@ -1,5 +1,5 @@
 # DraftZone MMM — pipeline targets. See docs/INFRA.md.
-.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard dashboard notebooks test all clean
+.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard meridian dashboard notebooks test all clean
 
 data:        ## generate synthetic national + geo data (+ sealed truth)
 	python -m draftzone_mmm.datagen
@@ -29,6 +29,11 @@ ladder:      ## spend-ladder demo: replica geos + multi-cell ladder -> fit curve
 
 leaderboard: ## grade every engine (incl. spend ladder) against the sealed truth -> docs/engines/
 	python scripts/engine_leaderboard.py
+
+meridian:    ## fit Google Meridian variants (national Fourier/AKS + geo panel). Needs .[meridian]
+	python scripts/fit_meridian.py --mode national --seasonality fourier
+	python scripts/fit_meridian.py --mode national --seasonality aks
+	python scripts/fit_meridian.py --mode geo
 
 dashboard:   ## build the interactive site
 	cd dashboard && npm ci && npm run build
