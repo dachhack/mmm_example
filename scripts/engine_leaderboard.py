@@ -121,7 +121,7 @@ def main():
                pymc_results(df, ARTIFACTS / "idata.nc", "DraftZone PyMC (obs)", "pymc_obs"),
                pymc_results(df, ARTIFACTS / "idata_anchored.nc", "DraftZone PyMC (anchored)", "pymc_anchored")]
     for path, label in [(ARTIFACTS / "meridian_results.json", "Google Meridian"),
-                        (ARTIFACTS / "meridian_calibrated_results.json", "Google Meridian (exp-calibrated)")]:
+                        (ARTIFACTS / "meridian_calibrated_results.json", "Meridian (naive lift→prior)")]:
         if path.exists():
             m = json.load(open(path))
             m["label"] = label
@@ -138,6 +138,22 @@ def main():
                      f"{g['r2']:.3f}" if g["r2"] is not None else "—",
                      f"{g['mae']:.0f}", f"{g['media_bias']:+.0f}%", cov])
     table = mr._tbl(["engine", "type", "R²", "MAE/ch ↓", "media bias", "CIs hit"], rows)
+
+    calib = next((e for e in engines if e["engine"] == "google_meridian_calibrated"), None)
+    calib_note = ""
+    if calib:
+        g = grade(calib, gtd)
+        calib_note = (
+            '<div class="callout warn"><b>Naive experiment calibration backfires '
+            f'({g["media_bias"]:+.0f}% media bias).</b> Feeding the raw geo-lift number straight into '
+            "Meridian's prior (here its mROI prior) <i>over-credits</i> — because the experiment "
+            "measures response in the test markets, which sit mid-curve (responsive), while the "
+            "national channels are far more saturated. Telling the model the next national dollar is "
+            "as productive as the test-market dollar lifts the whole curve. Correct calibration must "
+            "<b>translate the lift to the national operating point</b> — which is exactly what our own "
+            "DiD-likelihood anchor does (via the markets' adstock levels + saturation shape) and what "
+            "Meridian's <code>roi_calibration_period</code> is for. The lesson: you can't just hand a "
+            "lift test to an MMM; the operating-point translation is the hard part.</div>")
 
     gt_total = sum(gtd[f"media_{c}"] for c in CHANNELS)
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
@@ -156,6 +172,7 @@ point-estimate engines (naive, frequentist) have no credible intervals; the Baye
 <main class="wrap"><section>
 <div class="card"><img src="leaderboard.png" alt="engine comparison">
 {table}
+{calib_note}
 <p class="small">All engines share the same Fourier-seasonality control set and public data — no
 engine reads the answer key. "media bias" is total recovered media vs truth (+ = over-credit).
 Configuration (prior scale, seasonality handling) dominates engine choice: see the run reports
