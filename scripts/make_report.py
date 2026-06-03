@@ -426,6 +426,14 @@ def build_report_html(meta, before, after, truth, naive, freq, roi, troi, optim,
     chans = CHANNELS
     mae_b = np.mean([abs(before[c][0] - gtd[c]) for c in chans])
     mae_a = np.mean([abs(after[c][0] - gtd[c]) for c in chans])
+    if mae_a < mae_b:
+        anchor_phrase = (f"cut mean per-channel attribution error from <b>{mae_b:.0f}</b> to "
+                         f"<b>{mae_a:.0f}</b> conv/wk")
+    else:
+        anchor_phrase = (f"did <b>not</b> reduce attribution error here ({mae_b:.0f} → {mae_a:.0f} "
+                         "conv/wk) — deep in the headroom/convex regime the saturation shape is "
+                         "unidentified, so pinning the channel ceiling isn't enough and the anchor "
+                         "can make things worse")
     media_true = sum(gtd[c] for c in chans)
     uc_b = 100 * (1 - sum(before[c][0] for c in chans) / media_true)
     uc_a = 100 * (1 - sum(after[c][0] for c in chans) / media_true)
@@ -518,7 +526,7 @@ def build_report_html(meta, before, after, truth, naive, freq, roi, troi, optim,
 </div>
 <p>On this dataset (confound ρ≈{asm['confound']}, baseline {asm['baseline_share']}), the observational
 Bayesian model under-credited media and was overconfident. One randomized geo-experiment per channel
-cut mean per-channel attribution error from <b>{mae_b:.0f}</b> to <b>{mae_a:.0f}</b> conv/wk. The robust
+{anchor_phrase}. The robust
 optimizer's only confident move(s): <b>{', '.join(robust) if robust else 'none — everything test-first'}</b>.
 Under idealized always-on testing the maximum attainable fixed-budget lift was <b>+{attain:.1f}%</b> {mroi_note}</p>
 </div></section>
@@ -571,7 +579,7 @@ a cadence to catch the drift and bias the uncertainty can't see.</div></div></se
 <ol>
 <li>Good fit ≠ good attribution. R² rose across tiers while the decomposition stayed wrong until experiments entered.</li>
 <li>The confound biases observational MMM; priors bound the damage but don't cure it (see the channel the model still misses).</li>
-<li>Experiments repair the worst of it — but a <b>biased anchor injects its own error</b>, and robustness-across-uncertainty does not catch anchor bias.</li>
+<li>Experiments repair the worst of it <b>when channels are on the responsive part of their curves</b> — but deep in headroom (or under model misspecification) the saturation shape is unidentified, so a <b>biased anchor injects its own error</b>, and robustness-across-uncertainty does not catch anchor bias.</li>
 <li>Average ROI is a trap; marginal ROI drives decisions — and estimated marginal ROI runs optimistic.</li>
 <li>The attainable fixed-budget lift is small ({attain:+.1f}%); the real program is steady small moves + continuous re-testing, not a one-time jump.</li>
 </ol></div></section>

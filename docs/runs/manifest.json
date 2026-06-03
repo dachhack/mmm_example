@@ -1,5 +1,30 @@
 [
   {
+    "id": "extreme_headroom",
+    "label": "extreme_headroom",
+    "seed": 88,
+    "timestamp": "2026-06-03T17:30:44Z",
+    "assumptions": {
+      "confound": 0.6,
+      "baseline_share": "59%",
+      "saturation": "2.9x (headroom)",
+      "weeks": 156,
+      "markets": 80
+    },
+    "mae_before": 57.627101257399126,
+    "mae_after": 61.36384489957643,
+    "uc_before": -76.69719824478251,
+    "uc_after": -87.28918937618069,
+    "pp_coverage": 44.2,
+    "attainable_lift": 8.817770055380446,
+    "weeks_to_converge": 104,
+    "rounds_to_converge": 8,
+    "weeks_per_cycle": 13,
+    "exp90_smart": 21.0,
+    "exp90_roundrobin": 27.0,
+    "robust_moves": "paid_social decrease, influencer increase, tv_ctv decrease"
+  },
+  {
     "id": "high_headroom",
     "label": "high_headroom",
     "seed": 88,
