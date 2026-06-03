@@ -144,16 +144,19 @@ def main():
     if calib:
         g = grade(calib, gtd)
         calib_note = (
-            '<div class="callout warn"><b>Naive experiment calibration backfires '
-            f'({g["media_bias"]:+.0f}% media bias).</b> Feeding the raw geo-lift number straight into '
-            "Meridian's prior (here its mROI prior) <i>over-credits</i> — because the experiment "
-            "measures response in the test markets, which sit mid-curve (responsive), while the "
-            "national channels are far more saturated. Telling the model the next national dollar is "
-            "as productive as the test-market dollar lifts the whole curve. Correct calibration must "
-            "<b>translate the lift to the national operating point</b> — which is exactly what our own "
-            "DiD-likelihood anchor does (via the markets' adstock levels + saturation shape) and what "
-            "Meridian's <code>roi_calibration_period</code> is for. The lesson: you can't just hand a "
-            "lift test to an MMM; the operating-point translation is the hard part.</div>")
+            '<div class="callout warn"><b>Naive lift-calibration mis-sets channels '
+            f'(media bias {g["media_bias"]:+.0f}%, MAE {g["mae"]:.0f}/ch).</b> Feeding one geo-lift '
+            "number into a model's <i>marginal</i> prior is fragile for two reasons. "
+            "<b>(1) Operating point:</b> if the test markets aren't scale-consistent replicas of the "
+            "national channel, the lift is measured at the wrong point and grossly over-credits "
+            "(+113% on half-sat geos here; ~+20% once the geos are centered on national). "
+            "<b>(2) Secant bias:</b> a detectable lift needs a big spend bump, so it measures the "
+            "<i>average</i> response over that jump, not the <i>marginal</i> — understating saturated "
+            "channels (flat region) and overstating headroom ones (convex region), shifting credit "
+            "from saturated to unsaturated channels. The fix isn't a scalar prior: feed the lift at "
+            "its measured <b>exposure levels</b> and let the model's curve translate it (our DiD-"
+            "likelihood anchor; Meridian's <code>roi_calibration_period</code>), or run a "
+            "<b>spend ladder</b> to trace the curve. You can't just hand a lift test to an MMM.</div>")
 
     gt_total = sum(gtd[f"media_{c}"] for c in CHANNELS)
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
