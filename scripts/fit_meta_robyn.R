@@ -22,7 +22,8 @@ getarg <- function(flag, default) { i <- which(args == flag); if (length(i)) arg
 iterations <- as.integer(getarg("--iterations", "800"))
 trials     <- as.integer(getarg("--trials", "2"))
 cores      <- as.integer(getarg("--cores", "3"))
-out_path   <- getarg("--out", "artifacts/meta_robyn_results.json")
+calibrate  <- "--calibrate" %in% args   # anchor Robyn to the spend-ladder experiment readout
+out_path   <- getarg("--out", "")
 repo       <- normalizePath(file.path(dirname(sub("--file=", "", grep("--file=", commandArgs(FALSE), value = TRUE))), ".."))
 if (length(repo) == 0 || is.na(repo)) repo <- normalizePath(".")
 
@@ -52,7 +53,32 @@ for (v in expo_vars) {
   hyps[[paste0(v, "_alphas")]] <- c(0.5, 3)
   hyps[[paste0(v, "_gammas")]] <- c(0.3, 1)
 }
-InputCollect <- robyn_inputs(InputCollect = InputCollect, hyperparameters = hyps)
+
+# EXPERIMENT CALIBRATION (Robyn's calibration_input). Applying the project's lesson that the
+# confound-immune signal comes from experiments, we anchor each channel's TOTAL effect to the
+# spend-ladder readout (artifacts/ladder_results.json) — our most accurate experiment estimate,
+# which cracks the saturated channels. Robyn then adds a third objective (MAPE.LIFT) pulling the
+# fitted contribution toward the experiment, which should lift the media LEVEL that Prophet's trend
+# otherwise under-credits. This is the real-world workflow: feed your lift tests to your MMM.
+cal_in <- NULL
+engine_suffix <- ""
+if (calibrate) {
+  lad <- jsonlite::fromJSON(file.path(repo, "artifacts", "ladder_results.json"))$channels
+  n_weeks <- nrow(dt)
+  cal_in <- do.call(rbind, lapply(seq_along(chans), function(i) {
+    est <- lad[[chans[i]]]$est_contrib
+    data.frame(channel = spend_vars[i], liftStartDate = min(dt$week), liftEndDate = max(dt$week),
+               liftAbs = est * n_weeks, spend = sum(dt[[spend_vars[i]]]),
+               confidence = 0.90, metric = "conversions", calibration_scope = "total",
+               stringsAsFactors = FALSE)
+  }))
+  engine_suffix <- "_calibrated"
+  cat("Calibrating Robyn to spend-ladder lifts (conv/wk):",
+      paste(sprintf("%s=%.0f", chans, vapply(chans, function(c) lad[[c]]$est_contrib, numeric(1))),
+            collapse = " "), "\n")
+}
+InputCollect <- robyn_inputs(InputCollect = InputCollect, hyperparameters = hyps,
+                             calibration_input = cal_in)
 
 cat(sprintf("Running Meta Robyn: %d iterations x %d trials on %d cores...\n", iterations, trials, cores))
 OutputModels <- robyn_run(InputCollect = InputCollect, iterations = iterations, trials = trials,
@@ -64,7 +90,7 @@ hp  <- rbindlist(lapply(OutputModels[grepl("^trial[0-9]+$", names(OutputModels))
                         function(t) t$resultCollect$resultHypParam), fill = TRUE)
 agg <- rbindlist(lapply(OutputModels[grepl("^trial[0-9]+$", names(OutputModels))],
                         function(t) t$resultCollect$xDecompAgg), fill = TRUE)
-saveRDS(OutputModels, file.path(repo, "artifacts", "meta_robyn_models.rds"))  # so we never re-fit to re-extract
+saveRDS(OutputModels, file.path(repo, "artifacts", paste0("meta_robyn", engine_suffix, "_models.rds")))
 nz <- function(x) { r <- max(x) - min(x); if (r > 0) (x - min(x)) / r else rep(0, length(x)) }
 hp[, score := nz(nrmse) + nz(decomp.rssd)]
 best <- hp[which.min(score)]
@@ -83,7 +109,9 @@ channels <- list()
 for (i in seq_along(chans)) channels[[chans[i]]] <- list(est_contrib = unname(est[chans[i]]), ci = NULL)
 
 results <- list(
-  engine = "meta_robyn", label = "Meta Robyn (R 3.12.1)", bayesian = FALSE,
+  engine = paste0("meta_robyn", engine_suffix),
+  label = if (calibrate) "Meta Robyn (experiment-calibrated)" else "Meta Robyn (R 3.12.1)",
+  bayesian = FALSE,
   fit = list(r2 = best$rsq_train, nrmse = best$nrmse, decomp_rssd = best$decomp.rssd),
   selected_solID = best_sol, iterations = iterations, trials = trials,
   channels = channels,
@@ -91,6 +119,7 @@ results <- list(
                "geometric adstock + Hill + ridge, Nevergrad multi-objective (NRMSE + DECOMP.RSSD).",
                "Pareto-knee model. Point estimate (no credible interval).")
 )
+if (out_path == "") out_path <- file.path("artifacts", paste0("meta_robyn", engine_suffix, "_results.json"))
 out_abs <- if (substr(out_path, 1, 1) == "/") out_path else file.path(repo, out_path)
 dir.create(dirname(out_abs), showWarnings = FALSE, recursive = TRUE)
 write(toJSON(results, auto_unbox = TRUE, pretty = TRUE, null = "null"), out_abs)

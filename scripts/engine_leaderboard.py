@@ -49,6 +49,7 @@ ENGINE_COLOR = {
     "spend_ladder": "#d62728",
     "robyn_style": "#9467bd",
     "meta_robyn": "#c71585",
+    "meta_robyn_calibrated": "#e377c2",
 }
 # Stable display labels for every Meridian variant (engine id -> label).
 MERIDIAN_LABELS = {
@@ -158,7 +159,7 @@ def main():
     for path in sorted(ARTIFACTS.glob("google_meridian*.json")) + [
             ARTIFACTS / "meridian_results.json", ARTIFACTS / "meridian_calibrated_results.json",
             ARTIFACTS / "ladder_results.json", ARTIFACTS / "robyn_style_results.json",
-            ARTIFACTS / "meta_robyn_results.json"]:
+            ARTIFACTS / "meta_robyn_results.json", ARTIFACTS / "meta_robyn_calibrated_results.json"]:
         if not path.exists():
             continue
         m = json.load(open(path))
@@ -278,7 +279,7 @@ def main():
             "triangulates MMM with geo tests instead of trusting any single fit." + "</div>")
 
     robyn_note = ""
-    gmr, grs = _g("meta_robyn"), _g("robyn_style")
+    gmr, grs, gmc = _g("meta_robyn"), _g("robyn_style"), _g("meta_robyn_calibrated")
     if gmr or grs:
         bits = []
         if gmr:
@@ -301,6 +302,17 @@ def main():
                 "linear trend + Fourier season, not Prophet) leaves more for media and lands closer"
                 + (f" ({grs['media_bias']:+.0f}% bias, MAE {grs['mae']:.0f})" if grs else "")
                 + " — same method, different baseline flexibility, different answer.")
+            if gmc:
+                moved = gmr["media_bias"] - gmc["media_bias"]
+                split_txt += (
+                    " <b>Experiment calibration</b> (Robyn's <code>calibration_input</code>, anchored "
+                    "here to the spend-ladder readout — the project's confound-immune signal) targets "
+                    f"exactly that level gap: it moves Robyn to MAE {gmc['mae']:.0f}, bias "
+                    f"{gmc['media_bias']:+.0f}% ("
+                    + ("lifting the media level " if moved > 2 else
+                       "trading level for split " if moved < -2 else "holding the level ")
+                    + f"vs {gmr['media_bias']:+.0f}% uncalibrated) — the one lever that fixes the level "
+                    "honestly rather than by hand-picking a Pareto model.")
         robyn_note = (
             '<div class="callout"><b>Meta Robyn — the method, two implementations.</b> ' + " and ".join(bits)
             + ". Robyn is frequentist: ridge regression on a Prophet trend/season decomposition, with "
