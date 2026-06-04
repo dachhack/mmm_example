@@ -108,17 +108,6 @@
       "diverged": false,
       "sampling": null
     },
-    "google_meridian_calibrated": {
-      "label": "Meridian (naive lift\u2192prior)",
-      "world": "national",
-      "mae": 150.443296820171,
-      "bias": 18.58009209672524,
-      "hits": 3,
-      "n_ci": 6,
-      "r2": 0.8445580005645752,
-      "diverged": false,
-      "sampling": null
-    },
     "spend_ladder": {
       "label": "Spend ladder (curve fit)",
       "world": "national",
@@ -133,11 +122,11 @@
     "robyn_style": {
       "label": "Robyn-style (Python reimpl.)",
       "world": "national",
-      "mae": 91.4036115037233,
-      "bias": -57.111874083625615,
+      "mae": 83.1199375466502,
+      "bias": -51.935971991760276,
       "hits": 0,
       "n_ci": 0,
-      "r2": 0.8430066320183494,
+      "r2": 0.8439160212109477,
       "diverged": false,
       "sampling": null
     },
@@ -155,11 +144,11 @@
     "meta_robyn_calibrated": {
       "label": "Meta Robyn (experiment-calibrated)",
       "world": "national",
-      "mae": 76.59222939753583,
-      "bias": -47.857253003160025,
+      "mae": 94.85974606420251,
+      "bias": -59.271376521077045,
       "hits": 0,
       "n_ci": 0,
-      "r2": 0.8243,
+      "r2": 0.8329,
       "diverged": false,
       "sampling": null
     }
