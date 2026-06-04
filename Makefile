@@ -34,6 +34,7 @@ meridian:    ## fit Google Meridian variants (national Fourier/AKS + geo panel).
 	python scripts/fit_meridian.py --mode national --seasonality fourier
 	python scripts/fit_meridian.py --mode national --seasonality aks
 	python scripts/fit_meridian.py --mode geo
+	python scripts/fit_meridian.py --mode geo --demand-control
 
 dashboard:   ## build the interactive site
 	cd dashboard && npm ci && npm run build

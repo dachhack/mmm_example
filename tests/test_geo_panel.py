@@ -44,6 +44,15 @@ def test_confounder_targets_spend_and_lowers_geo_media():
     assert geo_tot < nat_tot, (geo_tot, nat_tot)  # targeted concentration costs efficiency
 
 
+def test_demand_proxy_is_an_imperfect_observable_control():
+    """The panel ships a demand_proxy column: correlated with the latent confounder but NOT perfect
+    (a realistic control). It must exist and have intermediate fidelity."""
+    _, _, panel, geo_truth = _panel(confound=1.0, noise_frac=0.18)
+    assert "demand_proxy" in panel.columns
+    fid = geo_truth["demand_proxy_fidelity"]
+    assert 0.5 < fid < 0.95, fid  # informative but imperfect
+
+
 def test_geo_panel_has_cross_sectional_spend_variation():
     _, _, panel, _ = _panel(confound=1.0, noise_frac=0.18)
     wk = sorted(panel["week"].unique())[40]

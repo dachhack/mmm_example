@@ -66,11 +66,13 @@ def build_input_data(df, fourier=True):
     return b.build()
 
 
-def build_geo_input_data(df, fourier=False):
+def build_geo_input_data(df, fourier=False, demand_control=False):
     """Multi-geo panel InputData (data/geo_panel.csv)."""
     from meridian.data import data_frame_input_data_builder as bld
     df = df.sort_values(["geo", "week"]).copy()
     controls = ["promo_flag", "price_index", "competitor_pressure", "holiday_flag"]
+    if demand_control and "demand_proxy" in df.columns:
+        controls.append("demand_proxy")   # imperfect observable proxy for the latent geo confounder
     if fourier:
         df["_t"] = df.groupby("geo").cumcount()
         controls += _add_fourier(df, df["_t"].to_numpy())
@@ -130,6 +132,9 @@ def main():
                     help="national single-series fit, or the multi-geo panel (Meridian's home turf)")
     ap.add_argument("--seasonality", choices=["fourier", "aks"], default=None,
                     help="fourier controls (default national) or Meridian AKS knots (default geo)")
+    ap.add_argument("--demand-control", action="store_true",
+                    help="(geo mode) include the demand_proxy column as a control — fight the latent "
+                         "geo confounder with an imperfect observable proxy")
     ap.add_argument("--calibrate", action="store_true",
                     help="experiment-calibrate via mROI prior from the geo anchors")
     ap.add_argument("--chains", type=int, default=2)
@@ -148,7 +153,7 @@ def main():
     if args.mode == "geo":
         df = pd.read_csv(REPO / "data" / "geo_panel.csv")
         T = df["week"].nunique()
-        data = build_geo_input_data(df, fourier=use_fourier)
+        data = build_geo_input_data(df, fourier=use_fourier, demand_control=args.demand_control)
     else:
         df = pd.read_csv(REPO / "data" / "national_weekly.csv")
         T = len(df)
@@ -158,6 +163,8 @@ def main():
     engine = "google_meridian"
     if args.mode == "geo":
         engine += "_geo"
+        if args.demand_control:
+            engine += "_ctrl"
     if seasonality == "aks" and args.mode != "geo":
         engine += "_aks"
 

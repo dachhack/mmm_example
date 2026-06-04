@@ -42,6 +42,7 @@ ENGINE_COLOR = {
     "google_meridian": "#2ca02c",
     "google_meridian_aks": "#98df8a",
     "google_meridian_geo": "#0b6e0b",
+    "google_meridian_geo_ctrl": "#6b8e23",
     "google_meridian_calibrated": "#17a589",
     "google_meridian_calibrated_geo": "#0aa3a3",
     "spend_ladder": "#d62728",
@@ -51,6 +52,7 @@ MERIDIAN_LABELS = {
     "google_meridian": "Google Meridian (national, Fourier)",
     "google_meridian_aks": "Meridian (national, AKS)",
     "google_meridian_geo": "Meridian (geo panel)",
+    "google_meridian_geo_ctrl": "Meridian (geo + demand control)",
     "google_meridian_calibrated": "Meridian (naive lift→prior)",
     "google_meridian_calibrated_geo": "Meridian (geo, calibrated)",
 }
@@ -214,40 +216,49 @@ def main():
         return grade(e, truth_for(e)) if e else None
 
     mer_note = ""
-    gfo, gak, gge = _g("google_meridian"), _g("google_meridian_aks"), _g("google_meridian_geo")
+    gfo, gak = _g("google_meridian"), _g("google_meridian_aks")
+    gge, gct = _g("google_meridian_geo"), _g("google_meridian_geo_ctrl")
     if gfo and (gak or gge):
         parts = [f"national + Fourier controls (MAE {gfo['mae']:.0f})"]
         if gak:
             parts.append(f"national + Meridian's own AKS knots, no Fourier (MAE {gak['mae']:.0f})")
         if gge:
-            parts.append(f"the multi-geo panel (MAE {gge['mae']:.0f})")
+            parts.append(f"the hardened multi-geo panel (MAE {gge['mae']:.0f})")
+        if gct:
+            parts.append(f"the same geo panel WITH a demand-proxy control (MAE {gct['mae']:.0f})")
         verdict = ""
         if gge:
             conf = sealed.get("geo_panel", {})
             rc = conf.get("realized_corr_spend_demand")
+            fid = conf.get("demand_proxy_fidelity")
             rc_txt = f" (realized corr(spend, demand) {rc:+.2f})" if rc is not None else ""
-            better = gak and gge["mae"] < gak["mae"]
             verdict = (
                 " The geo panel is Meridian's home turf — spend varies across geos within a week, "
                 "cross-sectional identification the national series lacks — but this panel is "
                 "<b>hardened</b>: a latent geo×time demand factor both lifts non-media conversions and "
-                f"draws targeted spend{rc_txt}, the geo analogue of the spend↔season confound, and it "
-                "is graded against the geo world's own answer key. Result: geo Meridian lands at "
-                f"<b>MAE {gge['mae']:.0f}</b> (media bias {gge['media_bias']:+.0f}%, "
-                f"{gge['hits']}/{gge['n_ci']} CIs) — "
-                + ("still strong, " if better else "no longer ahead of national AKS, ")
-                + "and the confounder pushes it to "
-                + ("over-credit media on the targeted channels. " if gge["media_bias"] > 3 else
-                   "mis-rank a couple of channels. ")
-                + f"National AKS stays the best-calibrated config (MAE {gak['mae']:.0f}, bias "
-                  f"{gak['media_bias']:+.0f}%, {gak['hits']}/{gak['n_ci']} CIs). Geo data buys "
-                  "cross-sectional power, <b>not immunity from an unobserved confounder</b>.")
+                f"draws targeted spend{rc_txt}, the geo analogue of the spend↔season confound, graded "
+                "against the geo world's own answer key. With <b>no control</b> for it, geo Meridian "
+                f"blows up to <b>MAE {gge['mae']:.0f}</b> (media bias {gge['media_bias']:+.0f}%, "
+                f"{gge['hits']}/{gge['n_ci']} CIs) — high R² and confidently wrong on every channel, "
+                "because it credits the demand-driven conversions to the spend that chases them.")
+            if gct:
+                buyback = 100 * (1 - gct["mae"] / gge["mae"])
+                fid_txt = f" (fidelity corr {fid:.2f})" if fid is not None else ""
+                verdict += (
+                    f" Feed it an <b>imperfect demand proxy</b>{fid_txt} as a control and most of the "
+                    f"damage reverses: <b>MAE {gct['mae']:.0f}</b> (bias {gct['media_bias']:+.0f}%, "
+                    f"{gct['hits']}/{gct['n_ci']} CIs), about {buyback:.0f}% of the error bought back. "
+                    "A good control fights the confounder — but a proxy is never perfect, and you "
+                    "can't know from fit alone whether it was good enough.")
+            if gak:
+                verdict += (f" National AKS remains best-calibrated (MAE {gak['mae']:.0f}, bias "
+                            f"{gak['media_bias']:+.0f}%, {gak['hits']}/{gak['n_ci']} CIs).")
         mer_note = (
-            '<div class="callout"><b>Meridian, configured three ways.</b> Same scale-corrected ROI '
-            "prior, three seasonality/geo setups: " + "; ".join(parts) + "."
-            + verdict + " On national data the Fourier workaround and AKS are two roads to the same "
-            "end; geo data adds cross-sectional power but, as the hardened panel shows, is no free "
-            "lunch against an unobserved geo confounder." + "</div>")
+            '<div class="callout"><b>Meridian, four ways.</b> Same scale-corrected ROI prior: '
+            + "; ".join(parts) + "."
+            + verdict + " The throughline: more/better data (geo cross-section, demand proxy) helps, "
+            "but only a <b>randomized experiment</b> breaks a confounder you can't see — the reason "
+            "this whole project triangulates MMM with geo tests instead of trusting any single fit." + "</div>")
 
     gt_total = sum(gtd[f"media_{c}"] for c in CHANNELS)
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">

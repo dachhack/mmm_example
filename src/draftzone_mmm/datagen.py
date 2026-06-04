@@ -503,7 +503,7 @@ def generate_spend_ladder(seed=909, T_exp=20, pre_period=6, camp_len=12,
 # National geo PANEL (for geo-level engines like Meridian)
 # ----------------------------------------------------------------------
 def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30,
-                       confound=0.0, noise_frac=0.06, demand_rel=0.20):
+                       confound=0.0, noise_frac=0.06, demand_rel=0.20, proxy_noise=0.8):
     """Decompose the national series into a multi-geo panel for geo-level MMM engines.
 
     Meridian (and geo MMMs generally) are built for geo×time data: spend that varies ACROSS geos
@@ -548,6 +548,11 @@ def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30,
         d[:, t] = phi * d[:, t - 1] + np.sqrt(1 - phi ** 2) * eps[:, t]
     d -= d.mean(axis=0, keepdims=True)             # zero-mean across geos each week
     spend_tilt = np.exp(0.9 * confound * d)        # marketer targets high-demand geo-weeks
+    # an observable but IMPERFECT proxy for the latent demand (e.g. regional search interest / app
+    # rank): correlated with d but noisy. A real analyst might have this; feeding it as a control is
+    # how you fight an otherwise-unobserved geo confounder. Drawn from a DEDICATED rng so adding the
+    # proxy does not perturb the rest of the panel's random stream.
+    demand_proxy = d + np.random.default_rng(seed + 4242).normal(0, proxy_noise, (n_geos, T))
 
     rows = []
     summed_contrib = {c: np.zeros(T) for c in CHANNELS}
@@ -593,7 +598,8 @@ def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30,
                        promo_flag=float(ctrl["promo_flag"][t]),
                        price_index=float(ctrl["price_index"][t]),
                        competitor_pressure=float(comp[t]),
-                       holiday_flag=float(nat_df["holiday_flag"].to_numpy()[t]))
+                       holiday_flag=float(nat_df["holiday_flag"].to_numpy()[t]),
+                       demand_proxy=float(demand_proxy[g, t]))
             row.update(by_gt[(g, t)])
             panel.append(row)
             demand_series.append(d[g, t])
@@ -601,10 +607,12 @@ def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30,
     panel_df = pd.DataFrame(panel)
 
     realized_confound = float(np.corrcoef(np.array(spend_series), np.array(demand_series))[0, 1])
+    proxy_fidelity = float(np.corrcoef(demand_proxy.ravel(), d.ravel())[0, 1])
     geo_truth = dict(
         n_geos=n_geos, idio_sigma=float(idio_sigma),
         confound=float(confound), noise_frac=float(noise_frac),
         realized_corr_spend_demand=realized_confound,
+        demand_proxy_fidelity=proxy_fidelity,
         avg_contribution_decomposition={c: float(summed_contrib[c].mean()) for c in CHANNELS},
         note="Geo-world truth: summed-across-geos avg weekly contribution per channel. Slightly "
              "below the national truth by the Hill aggregation (Jensen) gap.",
