@@ -1,0 +1,11 @@
+Package: lares
+Type: Package
+Title: Minimal shim of lares for Robyn (fit path only)
+Version: 5.3.0
+Authors@R: person("Shim","Shim", role=c("aut","cre"), email="shim@example.com")
+Description: Provides only the lares functions Robyn imports, so Robyn installs and runs its
+    modeling path without lares' heavy dependency tree. Plot/cluster helpers are stubs.
+License: MIT + file LICENSE
+Imports: ggplot2, dplyr, magrittr, glue, stats
+Encoding: UTF-8
+RoxygenNote: 7.3.2

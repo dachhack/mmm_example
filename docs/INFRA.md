@@ -38,3 +38,22 @@ transforms those into the published site.
 ## Secrets / config
 - No secrets needed for synthetic data. If a bot commit is used to push `docs/data/`, store a
   PAT in repo secrets and document it.
+
+## Alternative engines (leaderboard)
+The engine leaderboard (`scripts/engine_leaderboard.py` → `docs/engines/`) grades several MMM
+engines against the same sealed truth. Two are external:
+
+- **Google Meridian** (`scripts/fit_meridian.py`, `make meridian`): pip-installable
+  (`pip install -e ".[meridian]"`). Heavy TensorFlow; run on the VM. National (Fourier/AKS) and
+  geo-panel modes.
+- **Meta Robyn** (`scripts/fit_meta_robyn.R`, `make robyn-real`): the REAL R package. No R is
+  preinstalled here and CRAN is network-blocked, so `scripts/robyn/setup_robyn.sh` installs R and
+  ~all deps from the Ubuntu archive (`apt r-cran-*`), plus a minimal **`lares` shim**
+  (`scripts/robyn/lares_shim`) standing in for Robyn's heavy plotting/utility dependency (used only
+  off the model-fit path), and applies two one-line Robyn patches (relax `patchwork` version pin;
+  convert nevergrad's `ask()` value via `$tolist()` because reticulate 1.35 doesn't auto-convert
+  numpy-2 arrays). The modeling path is unmodified genuine Robyn. Robyn's optimiser is Nevergrad,
+  called via reticulate — keep `nevergrad` in the project venv. Run:
+  `bash scripts/robyn/setup_robyn.sh && RETICULATE_PYTHON=$(which python) Rscript scripts/fit_meta_robyn.R`.
+- **Robyn-style** (`scripts/fit_robyn_style.py`, `make robyn`): a pure-Python reimplementation of
+  Robyn's method (ridge + Nevergrad + DECOMP.RSSD) for environments without R.

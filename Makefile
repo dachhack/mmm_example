@@ -1,5 +1,5 @@
 # DraftZone MMM — pipeline targets. See docs/INFRA.md.
-.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard meridian dashboard notebooks test all clean
+.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard meridian robyn robyn-real dashboard notebooks test all clean
 
 data:        ## generate synthetic national + geo data (+ sealed truth)
 	python -m draftzone_mmm.datagen
@@ -32,6 +32,9 @@ leaderboard: ## grade every engine (incl. spend ladder) against the sealed truth
 
 robyn:       ## fit the Robyn-style engine (ridge + Nevergrad + DECOMP.RSSD). Needs nevergrad
 	python scripts/fit_robyn_style.py
+
+robyn-real:  ## fit the REAL Meta Robyn (R). First: bash scripts/robyn/setup_robyn.sh
+	RETICULATE_PYTHON=$$(which python) Rscript scripts/fit_meta_robyn.R --iterations 1000 --trials 3
 
 meridian:    ## fit Google Meridian variants (national Fourier/AKS + geo panel). Needs .[meridian]
 	python scripts/fit_meridian.py --mode national --seasonality fourier
