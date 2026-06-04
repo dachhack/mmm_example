@@ -112,12 +112,22 @@ def grade(res, gtd):
                 hits=hits, n_ci=n_ci, r2=res["fit"].get("r2"))
 
 
-def fig_leaderboard(path, engines, gtd, geo_gtd=None):
+def diverged(res, gtd):
+    """An engine 'diverged' if its recovered media is wildly off (e.g. NLS that didn't converge):
+    total recovered media more than 4x the truth, or MAE worse than 2x the true media total. Such
+    runs are kept in the table (flagged) but excluded from the bar chart so they don't crush its scale."""
+    tot_true = sum(gtd[f"media_{c}"] for c in CHANNELS)
+    tot_est = sum(res["channels"][c]["est_contrib"] for c in CHANNELS)
+    return abs(tot_est) > 4 * tot_true or grade(res, gtd)["mae"] > 2 * tot_true
+
+
+def fig_leaderboard(path, engines, gtd, geo_gtd=None, skip=()):
+    plotted = [e for e in engines if e["engine"] not in skip]
     x = np.arange(len(CHANNELS))
-    n = len(engines)
+    n = len(plotted)
     w = 0.8 / n
     fig, ax = plt.subplots(figsize=(11, 4.6))
-    for i, e in enumerate(engines):
+    for i, e in enumerate(plotted):
         vals = [e["channels"][c]["est_contrib"] for c in CHANNELS]
         ax.bar(x + (i - (n - 1) / 2) * w, vals, w, label=e["label"],
                color=ENGINE_COLOR.get(e["engine"], "#999"))
@@ -171,18 +181,31 @@ def main():
             m["label"] = "Spend ladder (curve fit)"
         engines.append(m)
 
+    skip = {e["engine"] for e in engines if diverged(e, truth_for(e))}
     OUT.mkdir(parents=True, exist_ok=True)
-    fig_leaderboard(OUT / "leaderboard.png", engines, gtd, geo_gtd)
+    fig_leaderboard(OUT / "leaderboard.png", engines, gtd, geo_gtd, skip=skip)
 
     rows = []
-    for e in sorted(engines, key=lambda e: grade(e, truth_for(e))["mae"]):
+    # diverged engines sort to the bottom regardless of their (meaningless) MAE
+    for e in sorted(engines, key=lambda e: (e["engine"] in skip, grade(e, truth_for(e))["mae"])):
         g = grade(e, truth_for(e))
         cov = f"{g['hits']}/{g['n_ci']}" if g["n_ci"] else "—"
         world = "geo" if _is_geo(e) else "nat'l"
-        rows.append([e["label"], world, "Bayesian" if e.get("bayesian") else "point",
+        label = e["label"] + (" ⚠ diverged" if e["engine"] in skip else "")
+        rows.append([label, world, "Bayesian" if e.get("bayesian") else "point",
                      f"{g['r2']:.3f}" if g["r2"] is not None else "—",
                      f"{g['mae']:.0f}", f"{g['media_bias']:+.0f}%", cov])
     table = mr._tbl(["engine", "world", "type", "R²", "MAE/ch ↓", "media bias", "CIs hit"], rows)
+    diverged_note = ""
+    if skip:
+        names = ", ".join(sorted(e["label"] for e in engines if e["engine"] in skip))
+        diverged_note = (
+            f'<div class="callout warn"><b>{names} diverged on this dataset.</b> Unregularised '
+            "non-linear least squares has no prior to keep it in bounds, so on some data realisations "
+            "it runs to a degenerate fit (one channel’s β explodes). It is kept in the table for "
+            "honesty but excluded from the chart so it doesn’t crush the scale — a reminder that "
+            "the Bayesian/regularised engines’ priors are not just for uncertainty, they are what "
+            "keep a thin-data MMM numerically sane.</div>")
 
     calib = next((e for e in engines if e["engine"] == "google_meridian_calibrated"), None)
     calib_note = ""
@@ -349,6 +372,7 @@ key (a lower media total, because targeting concentrates spend into Hill saturat
 <main class="wrap"><section>
 <div class="card"><img src="leaderboard.png" alt="engine comparison">
 {table}
+{diverged_note}
 {robyn_note}
 {mer_note}
 {ladder_note}
