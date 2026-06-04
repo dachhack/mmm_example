@@ -163,3 +163,50 @@ synthetic world with its own randomized experiments. *Within* a run they are com
 (e.g. by Robyn's calibration). The slow deep-dives (real Meta Robyn 2000×5, the geo control spectrum)
 remain single-seed documented results; Robyn's *method* is represented in the sweep by the Robyn-style
 reimplementation.
+
+---
+
+# 10-seed robustness + two engine fixes (follow-up 2)
+
+Extended the sweep to **10 seeds** and shipped two robustness fixes (spend ladder + frequentist NLS).
+The bigger sample is humbling: it overturns the 6-seed conclusion.
+
+## 10-seed robustness leaderboard (average rank)
+
+| engine | avg rank ↓ | wins | median MAE | spread (±std) | mean bias |
+|--------|-----------:|-----:|-----------:|--------------:|----------:|
+| Robyn-style | **2.6** | 4 | 42 | ±21 | −21% |
+| Meridian (Fourier) | 2.8 | 3 | 56 | ±14 | +17% |
+| Meridian (AKS) | 3.4 | 3 | 48 | **±37** | +7% |
+| PyMC (obs) | 4.0 | 0 | 56 | ±21 | +12% |
+| Spend ladder (fixed) | 4.1 | 0 | 64 | ±21 | +21% |
+| PyMC (anchored) | 5.4 | 0 | 80 | ±14 | −38% |
+| Naive OLS | 6.1 | 0 | 83 | ±15 | −17% |
+| Frequentist NLS (fixed) | 8.0 | 0 | 131 | ±56 | +41% |
+
+## The meta-lesson: even robustness rankings need samples
+
+At **6 seeds**, Meridian AKS looked like a clear robust champion — avg rank 2.0, tightest spread (±9).
+At **10 seeds** it falls to rank 3.4 with the *largest* spread of the leaders (±37); its tight ±9 was
+itself a small-sample artifact. The top three (Robyn-style, Fourier, AKS) are now **tied within the
+across-seed noise**. So the same skepticism we apply to a single dataset applies to the robustness
+study itself: *N=6 was not enough to declare a winner.* The honest output is a distribution with
+overlap, not a podium — which is the whole point.
+
+## Two fixes shipped (both: unregularised least squares → add a prior)
+
+1. **Spend ladder** — ridge on the ceiling + tighter half-sat bound. Across seeds: max MAE 360→98,
+   spread ±116→±21, zero blow-ups; settled into stable mid-pack (rank 4.1).
+2. **Frequentist NLS** — betas came from unconstrained `lstsq`, so collinear Hill features let one
+   explode (seed 303 hit MAE **47,375**; it was diverging on most seeds, not one). Added
+   non-negativity + a contribution-space ridge. Across seeds: every blow-up gone, median MAE 131,
+   zero divergences — a stable engine instead of a fragile one.
+
+   Both engines had the *same disease* (unregularised least squares) and the *same cure* (a prior /
+   ridge). That is the leaderboard's recurring moral made concrete: in thin-data, many-parameter MMM,
+   regularisation isn't a nicety — it's what keeps the fit on the road.
+
+## Still single-seed (deep-dives)
+
+Real Meta Robyn (2000×5, plain + calibrated) and the geo control-spectrum remain one-seed documented
+results; the fast sweep covers the engines cheap enough to run at best config across 10 datasets.
