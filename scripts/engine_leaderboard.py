@@ -47,6 +47,7 @@ ENGINE_COLOR = {
     "google_meridian_calibrated": "#17a589",
     "google_meridian_calibrated_geo": "#0aa3a3",
     "spend_ladder": "#d62728",
+    "robyn_style": "#9467bd",
 }
 # Stable display labels for every Meridian variant (engine id -> label).
 MERIDIAN_LABELS = {
@@ -155,7 +156,7 @@ def main():
     seen = set()
     for path in sorted(ARTIFACTS.glob("google_meridian*.json")) + [
             ARTIFACTS / "meridian_results.json", ARTIFACTS / "meridian_calibrated_results.json",
-            ARTIFACTS / "ladder_results.json"]:
+            ARTIFACTS / "ladder_results.json", ARTIFACTS / "robyn_style_results.json"]:
         if not path.exists():
             continue
         m = json.load(open(path))

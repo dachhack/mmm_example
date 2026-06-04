@@ -30,6 +30,9 @@ ladder:      ## spend-ladder demo: replica geos + multi-cell ladder -> fit curve
 leaderboard: ## grade every engine (incl. spend ladder) against the sealed truth -> docs/engines/
 	python scripts/engine_leaderboard.py
 
+robyn:       ## fit the Robyn-style engine (ridge + Nevergrad + DECOMP.RSSD). Needs nevergrad
+	python scripts/fit_robyn_style.py
+
 meridian:    ## fit Google Meridian variants (national Fourier/AKS + geo panel). Needs .[meridian]
 	python scripts/fit_meridian.py --mode national --seasonality fourier
 	python scripts/fit_meridian.py --mode national --seasonality aks
