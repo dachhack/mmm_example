@@ -393,7 +393,12 @@ def generate_geo_experiments(seed=808, T_exp=20, pre_period=6, camp_len=12,
             fracs.append(float(hill_saturation(np.array([ad_m]), hs_m, slope)[0]))
 
         ratio = float(np.mean(ratios))
-        assert 0.2 <= ratio <= 3.0, (f"{channel}: mean market adstock/half_sat {ratio:.2f} off-band")
+        # At the default saturation this should sit on the responsive band; at extreme
+        # --saturation-scale the test markets can be far up/down the curve (a real phenomenon —
+        # you can't cleanly lift-test a deeply saturated channel), so warn rather than halt.
+        if not (0.2 <= ratio <= 3.0):
+            print(f"  [warn] {channel}: mean market adstock/half_sat {ratio:.2f} off the responsive "
+                  "band (expected at extreme saturation-scale)")
         exp_truth[channel] = dict(
             quarter=GEO_CALENDAR[channel],
             true_increment_per_market_week=float(np.mean(true_incs)),

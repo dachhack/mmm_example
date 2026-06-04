@@ -1,5 +1,5 @@
 # DraftZone MMM — pipeline targets. See docs/INFRA.md.
-.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard robustness pages sweep meridian robyn robyn-real dashboard notebooks test all clean
+.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard robustness pages conditional sweep meridian robyn robyn-real dashboard notebooks test all clean
 
 data:        ## generate synthetic national + geo data (+ sealed truth)
 	python -m draftzone_mmm.datagen
@@ -36,6 +36,9 @@ robustness:  ## snapshot this run + aggregate robustness across seeds -> docs/ro
 
 pages:       ## build the results & recommendations + process narrative pages -> docs/
 	python scripts/build_site_pages.py
+
+conditional: ## which-engine-when sweep over saturation regimes -> docs/conditional/
+	bash scripts/run_conditional_sweep.sh "0.5 1.0 2.0" "$(SEEDS)"
 
 sweep:       ## multi-seed robustness sweep (fast national engines). make sweep SEEDS="101 202 303"
 	bash scripts/run_robustness_sweep.sh $(SEEDS)

@@ -43,6 +43,11 @@ def pymc_diagnostics(idata_path):
 
 
 def main():
+    import argparse
+    ap = argparse.ArgumentParser(description="Snapshot one run's graded results.")
+    ap.add_argument("--out", default=None, help="output path (default docs/robustness/run_<seed>.json)")
+    args = ap.parse_args()
+
     cfg = json.load(open(REPO / "data" / "config.json"))
     seed = cfg.get("seed", 0)
     df = load_national()
@@ -55,7 +60,11 @@ def main():
 
     out = dict(seed=seed,
                national_media_total=float(sum(gtd[f"media_{c}"] for c in CHANNELS)),
-               confound=cfg.get("realized_confound"), engines={})
+               confound=cfg.get("realized_confound"),
+               # data REGIME (for conditional "which engine when" analysis)
+               saturation_scale=cfg.get("saturation_scale", 1.0),
+               seasonal_saturation=bool(cfg.get("seasonal_saturation", False)),
+               engines={})
     for e in engines:
         g = lb.grade(e, truth_for(e))
         out["engines"][e["engine"]] = dict(
@@ -65,10 +74,11 @@ def main():
             sampling=diag.get(e["engine"]))
 
     OUT.mkdir(parents=True, exist_ok=True)
-    path = OUT / f"run_{seed}.json"
+    path = pathlib.Path(args.out) if args.out else OUT / f"run_{seed}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
     with open(path, "w") as f:
         json.dump(out, f, indent=2)
-    print(f"Snapshot seed={seed}: {len(out['engines'])} engines -> {path}")
+    print(f"Snapshot seed={seed} sat={out['saturation_scale']}: {len(out['engines'])} engines -> {path}")
     for eng, r in sorted(out["engines"].items(), key=lambda kv: kv[1]["mae"]):
         s = r["sampling"]
         sd = f"  ESS_min={s['ess_bulk_min']:.0f} Rhat_max={s['rhat_max']:.3f}" if s and "ess_bulk_min" in s else ""
