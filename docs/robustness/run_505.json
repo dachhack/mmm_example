@@ -17,12 +17,12 @@
     "frequentist_nls": {
       "label": "Frequentist NLS",
       "world": "national",
-      "mae": 970.5561739993824,
-      "bias": 550.9924719223595,
+      "mae": 291.16567704961307,
+      "bias": 122.38239226305274,
       "hits": 0,
       "n_ci": 0,
-      "r2": 0.8370855113863686,
-      "diverged": true,
+      "r2": 0.8368295219600255,
+      "diverged": false,
       "sampling": null
     },
     "pymc_obs": {
