@@ -109,7 +109,8 @@ def main():
 <p class="sub">{len(runs)} synthetic worlds (seeds {", ".join(map(str, seeds))}) — which engines are
 reliably good, not just lucky on one. This is the canonical ranking; the
 <a href="../engines/index.html">single-dataset leaderboard</a> is a per-seed deep dive with the
-full engine set and figures. <a href="../results/index.html">results &amp; recommendations</a> ·
+full engine set and figures. <a href="../conditional/index.html">which engine when</a> ·
+<a href="../results/index.html">results &amp; recommendations</a> ·
 <a href="../process/index.html">how it works</a> · <a href="../runs/index.html">run tracker</a></p>
 <p>A single leaderboard answers "who won this dataset?"; that ranking is unstable. This page answers
 "who wins on average, and how often?" — the only fair way to compare methods. <b>Average rank</b> and

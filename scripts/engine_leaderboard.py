@@ -367,6 +367,7 @@ def main():
 <h1>Engine leaderboard</h1>
 <p class="sub">Every engine we've tried, one sealed answer key — graded on one dataset (a per-seed deep dive — for the canonical ranking see the
 <a href="../robustness/index.html">multi-seed leaderboard</a>).
+<a href="../conditional/index.html">which engine when</a> ·
 <a href="../results/index.html">results &amp; recommendations</a> ·
 <a href="../process/index.html">how it works</a> · <a href="../runs/index.html">run tracker</a></p>
 <p>Every engine recovers a per-channel contribution decomposition; we score each against the

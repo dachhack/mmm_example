@@ -623,6 +623,7 @@ the same things: how badly observational MMM is fooled by the spend↔season con
 geo-experiment repairs it, whether marginal ROI is trustworthy, and what an idealized test-and-learn program
 can actually attain. <a href="../results/index.html">Results &amp; recommendations →</a>
 &nbsp;·&nbsp; <a href="../process/index.html">How it works →</a>
+&nbsp;·&nbsp; <a href="../conditional/index.html">Which engine when →</a>
 &nbsp;·&nbsp; <a href="../robustness/index.html">Multi-seed leaderboard →</a>
 &nbsp;·&nbsp; <a href="../engines/index.html">Single-seed deep dive →</a>
 &nbsp;·&nbsp; <a href="../ladder/index.html">Spend ladders →</a>
