@@ -115,3 +115,51 @@ uncertainty — they are what keep a thin-data, many-parameter MMM numerically s
 - **Average-rank leaderboard** across seeds, so the headline is stability, not one lucky fit.
 - **Better experiment for Robyn calibration**: a less greedy baseline or a higher-power ladder so
   the calibration ceiling rises above −14%.
+
+---
+
+# Robustness across 6 seeds (follow-up)
+
+Ran the fast national engines (best config) across **6 independent datasets** (seeds 2025, 101, 202,
+303, 404, 505) and aggregated by **average rank, win-rate, and MAE stability** — the only fair way to
+compare methods. Page: [robustness across seeds](robustness/index.html). This reframes the single-seed
+story substantially.
+
+## National engines, ranked by average rank (6 seeds)
+
+| engine | avg rank ↓ | wins | median MAE | spread (±std) | mean bias | ESS / R̂ |
+|--------|-----------:|-----:|-----------:|--------------:|----------:|:-------:|
+| **Meridian (AKS)** | **2.0** | 3 | 40 | **±9** | −14% | — |
+| Meridian (Fourier) | 2.5 | 3 | 49 | ±15 | +10% | — |
+| Robyn-style | 3.7 | 0 | 46 | ±19 | −28% | — |
+| Spend ladder (after fix) | 4.3 | 0 | 74 | ±25 | +25% | — |
+| PyMC (obs) | 4.5 | 0 | 51 | ±23 | +11% | 592 / 1.001 |
+| PyMC (anchored) | 5.3 | 0 | 77 | ±14 | −37% | **230 / 1.013** |
+| Naive OLS | 6.0 | 0 | 78 | ±10 | −19% | — |
+| Frequentist NLS | 8.0 | 0 | 193 | ±52 (diverged 2/6) | +42% | — |
+
+## What the sweep changed vs. the single-seed view
+
+1. **Meridian (AKS) is the robust champion** — best average rank, 3 wins, tightest spread (±9).
+   Meridian (AKS *or* Fourier) won all 6 seeds. On seed-2025 alone AKS looked mediocre; across seeds
+   it edges Fourier. **The single-seed "winner" is noise; AKS is the stable choice.**
+2. **The spend ladder was *not* robust — and we fixed it.** Its seed-2025 MAE-25 was luck: on ~half
+   the seeds the unregularised Hill curve-fit blew up (max MAE 360). We added a ridge on the ceiling
+   (`BETA_REG`) + a tighter half-sat bound; the blow-ups vanished (max 360→98, no regressions), and
+   the ladder settled into stable mid-pack (rank 4.3, spread ±25 vs ±116). A real optimisation, found
+   only because we looked across seeds.
+3. **The experiment anchor reliably hurts** — worse rank than obs (5.3 vs 4.5) *and* worse sampling
+   (ESS 230 vs 592, R̂ 1.013 vs 1.001). The ESS diagnostic shows it's a worse *model* (more posterior
+   tension), not bad luck. The curve-aware anchor on replica geos needs rethinking.
+4. **Bias direction is realization-dependent** (e.g. ladder +25% mean but ranges negative-to-positive
+   across seeds); only MAE *magnitude* is stable. No engine has a dependable bias sign.
+5. **Frequentist NLS is unstable** (diverged 2/6, median MAE 193) — same disease as the un-fixed
+   ladder (unregularised least squares), same cure available.
+
+## Note on reuse (answering the question that prompted this)
+
+Spend-ladder results are **recomputed every run**, never reused across seeds — each seed is a new
+synthetic world with its own randomized experiments. *Within* a run they are computed once and reused
+(e.g. by Robyn's calibration). The slow deep-dives (real Meta Robyn 2000×5, the geo control spectrum)
+remain single-seed documented results; Robyn's *method* is represented in the sweep by the Robyn-style
+reimplementation.

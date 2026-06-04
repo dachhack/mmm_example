@@ -366,7 +366,7 @@ def main():
 <div class="kicker">A Skeptic's Guide to Marketing Mix Modeling</div>
 <h1>Engine leaderboard</h1>
 <p class="sub">Every engine we've tried, one sealed answer key — graded on the same dataset.
-<a href="../runs/index.html">← run tracker</a></p>
+<a href="../runs/index.html">← run tracker</a> · <a href="../robustness/index.html">robustness across seeds →</a></p>
 <p>Every engine recovers a per-channel contribution decomposition; we score each against the
 true values (national media total {gt_total:.0f} conv/wk). Lower mean absolute error is better. The
 two point-estimate engines (naive, frequentist) have no credible intervals; the Bayesian engines

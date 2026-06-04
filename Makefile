@@ -1,5 +1,5 @@
 # DraftZone MMM — pipeline targets. See docs/INFRA.md.
-.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard meridian robyn robyn-real dashboard notebooks test all clean
+.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard robustness sweep meridian robyn robyn-real dashboard notebooks test all clean
 
 data:        ## generate synthetic national + geo data (+ sealed truth)
 	python -m draftzone_mmm.datagen
@@ -29,6 +29,13 @@ ladder:      ## spend-ladder demo: replica geos + multi-cell ladder -> fit curve
 
 leaderboard: ## grade every engine (incl. spend ladder) against the sealed truth -> docs/engines/
 	python scripts/engine_leaderboard.py
+
+robustness:  ## snapshot this run + aggregate robustness across seeds -> docs/robustness/
+	python scripts/snapshot_results.py
+	python scripts/robustness.py
+
+sweep:       ## multi-seed robustness sweep (fast national engines). make sweep SEEDS="101 202 303"
+	bash scripts/run_robustness_sweep.sh $(SEEDS)
 
 robyn:       ## fit the Robyn-style engine (ridge + Nevergrad + DECOMP.RSSD). Needs nevergrad
 	python scripts/fit_robyn_style.py

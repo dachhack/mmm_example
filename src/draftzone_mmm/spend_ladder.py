@@ -69,6 +69,12 @@ def _cell_did(sub, control_markets, cell_markets):
 
 SLOPE_REG = 0.4   # mild ridge pulling slope toward a plausible 1.4 (few-point fits are noisy)
 SLOPE_PRIOR = 1.4
+# Robustness: when a channel's cells are too flat/noisy to pin the curve, beta (the ceiling) is
+# unidentified and least squares lets it — and half-sat — run to their bounds, so the extrapolated
+# national contribution (beta x f / size_frac) explodes. A ridge on log(beta) toward the data scale
+# plus a tight half-sat bound keep the fit from extrapolating a ceiling the cells never showed. The
+# robustness sweep (some seeds blew up to 10x MAE without this) motivated it.
+BETA_REG = 0.30
 
 
 def _fit_hill(exposures, lifts, a0, slope0=1.5, weights=None):
@@ -76,26 +82,29 @@ def _fit_hill(exposures, lifts, a0, slope0=1.5, weights=None):
 
     ``a0`` is the control (BAU) cell's campaign exposure, so the (a0, 0) point is implicit and the
     down cells (negative lift) anchor the curve's absolute level. Parametrised in log-space for
-    positivity, with a light ridge on slope so a handful of noisy points can't push it to a bound.
+    positivity, with ridges on slope and beta so a handful of noisy points can't push the
+    (weakly-identified) ceiling to a bound and blow up the extrapolation.
     Returns (beta, hs, slope, resid_rms).
     """
     a = np.asarray(exposures, float)
     y = np.asarray(lifts, float)
     w = np.ones_like(y) if weights is None else np.asarray(weights, float)
     amax = a.max()
+    beta_anchor = max(np.abs(y).max(), 1.0) * 3.0   # data-scale guess for the ceiling
 
     def resid(p):
         beta, hs, slope = np.exp(p)
         f = hill_saturation(a, hs, slope) - hill_saturation(np.array([a0]), hs, slope)[0]
-        reg = SLOPE_REG * (np.log(slope) - np.log(SLOPE_PRIOR))
-        return np.concatenate([w * (beta * f - y), [reg]])
+        reg_slope = SLOPE_REG * (np.log(slope) - np.log(SLOPE_PRIOR))
+        reg_beta = BETA_REG * (np.log(beta) - np.log(beta_anchor))
+        return np.concatenate([w * (beta * f - y), [reg_slope, reg_beta]])
 
-    p0 = np.log([max(np.abs(y).max(), 1.0) * 3.0, max(a0, 1.0), slope0])
-    lo = np.log([1e-3, amax * 1e-2, 0.6])
-    hi = np.log([1e7, amax * 50, 3.0])
+    p0 = np.log([beta_anchor, max(a0, 1.0), slope0])
+    lo = np.log([1e-3, amax * 5e-2, 0.6])
+    hi = np.log([beta_anchor * 40, amax * 8, 3.0])   # bounded ceiling + tighter half-sat
     sol = least_squares(resid, p0, bounds=(lo, hi), max_nfev=5000)
     beta, hs, slope = np.exp(sol.x)
-    rms = float(np.sqrt(np.mean((resid(sol.x)[:-1]) ** 2)))
+    rms = float(np.sqrt(np.mean((resid(sol.x)[:-2]) ** 2)))
     return float(beta), float(hs), float(slope), rms
 
 

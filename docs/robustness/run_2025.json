@@ -122,8 +122,8 @@
     "spend_ladder": {
       "label": "Spend ladder (curve fit)",
       "world": "national",
-      "mae": 25.009044372558368,
-      "bias": -13.840314943224152,
+      "mae": 24.553347503501055,
+      "bias": -13.521533819171673,
       "hits": 6,
       "n_ci": 6,
       "r2": null,
