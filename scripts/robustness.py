@@ -102,13 +102,14 @@ def main():
     css = mr.CSS
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MMM robustness — across seeds</title><style>{css}</style></head><body>
+<title>MMM multi-seed leaderboard</title><style>{css}</style></head><body>
 <header class="hero"><div class="wrap">
 <div class="kicker">A Skeptic's Guide to Marketing Mix Modeling</div>
-<h1>Robustness across datasets</h1>
+<h1>Multi-seed leaderboard</h1>
 <p class="sub">{len(runs)} synthetic worlds (seeds {", ".join(map(str, seeds))}) — which engines are
-reliably good, not just lucky on one. <a href="../engines/index.html">← engine leaderboard</a> ·
-<a href="../runs/index.html">run tracker</a></p>
+reliably good, not just lucky on one. This is the canonical ranking; the
+<a href="../engines/index.html">single-dataset leaderboard</a> is a per-seed deep dive with the
+full engine set and figures. <a href="../runs/index.html">run tracker</a></p>
 <p>A single leaderboard answers "who won this dataset?"; that ranking is unstable. This page answers
 "who wins on average, and how often?" — the only fair way to compare methods. <b>Average rank</b> and
 <b>win-rate</b> are computed among non-diverged national engines within each run; <b>MAE spread</b>

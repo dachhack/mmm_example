@@ -61,9 +61,11 @@ TIMEOUT=3600 step "meta_robyn_calibrated" Rscript scripts/fit_meta_robyn.R --cal
 step "leaderboard_4" python scripts/engine_leaderboard.py
 ckpt "meta robyn (plain + calibrated)"
 
-# 6) reports
+# 6) snapshot ALL engines (incl. geo + Robyn) into the multi-seed leaderboard, then reports
+step "snapshot"      python scripts/snapshot_results.py
+step "robustness"    python scripts/robustness.py
 step "ladder_report" python scripts/spend_ladder_report.py
 step "run_report"    python scripts/make_report.py --label "$LABEL"
-ckpt "reports"
+ckpt "snapshot + reports"
 
 say "=== ALL DONE seed=$SEED ==="
