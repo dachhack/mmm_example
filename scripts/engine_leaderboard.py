@@ -258,10 +258,11 @@ def main():
                 bbh = 100 * (1 - ghi["mae"] / gge["mae"])
                 fth = f"{fidhi:.2f}" if fidhi is not None else "near-perfect"
                 verdict += (
-                    f" A <b>near-perfect</b> proxy (fidelity {fth}) finally recovers most of it — "
-                    f"<b>MAE {ghi['mae']:.0f}</b>, bias {ghi['media_bias']:+.0f}%, {ghi['hits']}/{ghi['n_ci']} "
-                    f"CIs, ~{bbh:.0f}% bought back. So the geo fit's quality is set entirely by "
-                    "<b>control quality</b> — and a real proxy lives near the useless end, not this one.")
+                    f" Even a <b>near-perfect</b> proxy (fidelity {fth}) only claws back about half — "
+                    f"<b>MAE {ghi['mae']:.0f}</b>, bias still {ghi['media_bias']:+.0f}%, {ghi['hits']}/{ghi['n_ci']} "
+                    f"CIs (~{bbh:.0f}% of the error bought back) — because the residual it misses still "
+                    "tracks the targeted spend. Control quality sets the ceiling, but a realistic proxy "
+                    "lives down near the useless end, and even the unrealistic one doesn't fully repair it.")
             if gak:
                 verdict += (f" National AKS stays best-calibrated (MAE {gak['mae']:.0f}, bias "
                             f"{gak['media_bias']:+.0f}%, {gak['hits']}/{gak['n_ci']} CIs).")
