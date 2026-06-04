@@ -1,0 +1,134 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Results & recommendations</title><style>
+:root{--bg:#0e1116;--panel:#161b22;--ink:#e6edf3;--muted:#9aa7b4;--line:#2a313c;--accent:#4da3ff;--good:#2ca02c;--bad:#d62728;--warn:#d9a200}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px}a{color:var(--accent)}
+header.hero{padding:54px 0 30px;border-bottom:1px solid var(--line);background:radial-gradient(1100px 360px at 50% -90px,#1b2b40 0,transparent 70%)}
+h1{font-size:2rem;margin:0 0 6px}.sub{color:var(--muted);margin:0 0 14px}
+.kicker{text-transform:uppercase;letter-spacing:2px;font-size:.72rem;color:var(--accent);font-weight:700;margin-bottom:8px}
+section{padding:34px 0;border-bottom:1px solid var(--line)}h2{font-size:1.4rem;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:600}
+.hit{color:var(--good);font-weight:700}.miss{color:var(--bad);font-weight:700}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:700}
+.pill.inc{background:rgba(44,160,44,.18);color:#69d36a}.pill.dec{background:rgba(214,39,40,.18);color:#ff6b6b}.pill.test{background:rgba(217,162,0,.18);color:#f0c64b}
+.callout{border-left:3px solid var(--accent);background:#1d2530;padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0}
+.callout.warn{border-left-color:var(--warn)}.callout.good{border-left-color:var(--good)}
+img{max-width:100%;border-radius:8px;border:1px solid var(--line);margin:8px 0}
+.metric{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0}.metric .m b{font-size:1.4rem;display:block}.metric .m span{color:var(--muted);font-size:.78rem}
+.small{font-size:.82rem;color:var(--muted)}footer{padding:36px 0 70px;color:var(--muted);font-size:.85rem}
+.tag{display:inline-block;background:#1d2530;border:1px solid var(--line);border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:.8rem}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0}table{min-width:520px}
+@media(max-width:640px){
+ .wrap{padding:0 14px}header.hero{padding:34px 0 22px}h1{font-size:1.5rem}h2{font-size:1.2rem}
+ .sub{font-size:.95rem}section{padding:24px 0}.card{padding:13px 14px}
+ th,td{padding:6px 7px;font-size:.84rem}.metric{gap:16px}.metric .m b{font-size:1.2rem}
+ body{font-size:15px}.kicker{font-size:.66rem}
+}
+</style></head><body>
+<header class="hero"><div class="wrap">
+<div class="kicker">A Skeptic's Guide to Marketing Mix Modeling</div>
+<h1>Results & recommendations</h1>
+<p class="sub">What 11 graded datasets say about trusting MMM — and what to do about it.</p>
+</div></header>
+<main class="wrap">
+<section><div class="card">
+<h2>The bottom line</h2>
+<p>We ran a controlled competition: a synthetic world where every channel's true effect is sealed in
+an answer key, and a dozen MMM approaches — naive regression, our Bayesian model, Google Meridian,
+Meta Robyn (the real R package), a spend-ladder experiment — all graded against that truth across
+many independent datasets. Three results matter more than any single number:</p>
+<ol>
+<li><b>There is no single "best" MMM.</b> Across 11 datasets the top engines (Meridian, our PyMC,
+Robyn-style) are <b>tied within the run-to-run noise</b>; the apparent winner changes with the data.
+Anyone who shows you one leaderboard and declares a champion is fooling themselves.</li>
+<li><b>An observational MMM is only as trustworthy as its confound control.</b> Spend chases demand
+(here, correlation ~0.6 with season), so without strong seasonality controls — and ideally a
+randomized experiment — attribution is biased in a direction you cannot know from the fit.</li>
+<li><b>Goodness-of-fit lies.</b> Engines hit R² 0.85–0.99 while mis-crediting channels by ±50–120%.
+Fit quality tells you almost nothing about decomposition quality.</li>
+</ol>
+</div></section>
+
+<section><div class="card">
+<h2>Multi-seed leaderboard (11 datasets)</h2>
+<div class="tablewrap"><table><thead><tr><th>engine</th><th>runs</th><th>avg rank ↓</th><th>wins</th><th>median MAE</th><th>spread</th><th>mean bias</th><th>diverged</th></tr></thead><tbody><tr><td>Google Meridian (national, Fourier)</td><td>11</td><td>2.7</td><td>3</td><td>54</td><td>±14</td><td>+17%</td><td>—</td></tr><tr><td>Robyn-style (Python reimpl.)</td><td>11</td><td>2.8</td><td>4</td><td>44</td><td>±19</td><td>-22%</td><td>—</td></tr><tr><td>Meridian (national, AKS)</td><td>11</td><td>3.2</td><td>4</td><td>47</td><td>±36</td><td>+6%</td><td>—</td></tr><tr><td>DraftZone PyMC (obs)</td><td>11</td><td>4.0</td><td>0</td><td>52</td><td>±20</td><td>+13%</td><td>—</td></tr><tr><td>Spend ladder (curve fit)</td><td>11</td><td>4.0</td><td>0</td><td>63</td><td>±22</td><td>+17%</td><td>—</td></tr><tr><td>DraftZone PyMC (anchored)</td><td>11</td><td>5.7</td><td>0</td><td>79</td><td>±13</td><td>-37%</td><td>—</td></tr><tr><td>Naive OLS</td><td>11</td><td>6.3</td><td>0</td><td>79</td><td>±15</td><td>-17%</td><td>—</td></tr><tr><td>Meta Robyn (R 3.12.1)</td><td>2</td><td>7.0</td><td>0</td><td>77</td><td>±25</td><td>-48%</td><td>—</td></tr><tr><td>Meta Robyn (experiment-calibrated)</td><td>2</td><td>7.0</td><td>0</td><td>78</td><td>±17</td><td>-49%</td><td>—</td></tr><tr><td>Frequentist NLS</td><td>11</td><td>8.2</td><td>0</td><td>129</td><td>±56</td><td>+39%</td><td>—</td></tr></tbody></table></div>
+<p class="small">Ranked by average rank across datasets (lower is better). "spread" is the across-seed
+std of MAE — the stability that actually matters. The full, always-current version with geo engines
+and sampling diagnostics is the <a href="../robustness/index.html">multi-seed leaderboard</a>.</p>
+</div></section>
+
+<section><div class="card">
+<h2>What we learned, by approach</h2>
+<ul>
+<li><b>Regularisation is not optional.</b> The two engines that <i>diverged</i> on real datasets —
+frequentist NLS and the raw spend-ladder curve fit — were the two with <i>unregularised least
+squares</i>. Adding a prior/ridge fixed both (NLS: a seed hit MAE 47,000 → ~130; ladder: max
+360 → 98). In thin-data, many-parameter MMM, priors are what keep the fit on the road.</li>
+<li><b>Control seasonality, idiomatically.</b> Meridian's AKS knots and a Fourier basis are two roads
+to the same end; without either, the spend↔season confound roughly doubles attribution.</li>
+<li><b>Geo data buys precision, not immunity.</b> A geo-level model is sharper, but against an
+<i>unobserved</i> geo confounder it becomes confidently wrong (+120% bias, 0/6 intervals covering
+truth). Even a near-perfect demand-proxy control only claws back about half. More observational data
+is not a substitute for randomization.</li>
+<li><b>Experiments are the anchor — but feed them correctly.</b> Bolting a single lift number onto a
+model as a scalar prior usually <i>hurt</i> (over-credited by 100%+). Curve-aware calibration (feed
+the lift at its measured exposure, or trace the curve with a spend ladder) is the right way — and it
+is still capped by the experiment's own accuracy.</li>
+<li><b>The spend ladder cracks saturated channels — at a real cost.</b> Multiple bracketed test cells
+measure the response curve that a single test can only assume; it is the one method that right-sizes
+saturated channels, but it costs a quarter of calendar time, scarce geo inventory, and a real media
+tax. See the <a href="../ladder/index.html">spend-ladder analysis</a>.</li>
+</ul>
+</div></section>
+
+<section><div class="card">
+<h2>Recommendations</h2>
+<ol>
+<li><b>Default to a regularised Bayesian MMM</b> and report uncertainty on every number. Point
+estimates without intervals are how teams talk themselves into spurious precision.</li>
+<li><b>Always control seasonality and known demand drivers.</b> If you cannot, assume your media is
+over-credited.</li>
+<li><b>Measure your confound.</b> If spend correlates strongly with demand and you have no experiment,
+treat the decomposition as a hypothesis, not an answer.</li>
+<li><b>Triangulate with randomized geo experiments.</b> A geo lift test / spend ladder is the only
+confound-immune evidence. Feed it curve-aware, not as a naive scalar prior.</li>
+<li><b>Decide on MARGINAL ROI under uncertainty,</b> not average ROI — and split channels into
+<i>confident</i> moves (act now) vs <i>test-first</i> (run an experiment before reallocating).</li>
+<li><b>Check robustness.</b> Refit on data subsets / time folds; if the ranking of channels flips,
+your "answer" is noise. One leaderboard is never enough.</li>
+</ol>
+</div></section>
+
+<section><div class="card">
+<h2>Run it on your data</h2>
+<p>The recommendations above are packaged. <code>draftzone_mmm.run.run_mmm</code> fits the
+findings-optimised configuration — regularised priors, seasonality control, uncertainty everywhere,
+a confound diagnostic, marginal ROI, and a confident-vs-test-first recommendation:</p>
+<pre>from draftzone_mmm.run import run_mmm
+
+res = run_mmm(
+    df,                                  # one row per week
+    kpi="conversions",                   # your outcome column
+    channels=["tv", "search", "social"],
+    spend_suffix="_spend",               # -> tv_spend, search_spend, ...
+    exposure_suffix="_impressions",      # optional; defaults to spend
+    controls=["price", "promo"],         # optional observed confounders
+    date="week",
+)
+
+print(res.summary())                     # contributions+CIs, confound, marginal ROI, verdicts
+res.contributions    # per-channel avg contribution with 89% credible intervals
+res.roi              # average AND marginal ROI per channel
+res.recommend()      # scale-up / cut (confident) vs test-first (uncertain)</pre>
+<p class="small">It is a single well-configured engine, deliberately conservative: when the confound
+is high and the posterior is wide it will tell you to <b>test first</b> rather than hand you a false
+answer. For a head-to-head of engines on your data, use the competition harness.</p>
+</div></section>
+</main>
+<footer class="wrap">Generated by <code>scripts/build_site_pages.py</code> ·
+<a href="../index.html">dashboard</a> · <a href="../robustness/index.html">multi-seed leaderboard</a> ·
+<a href="../engines/index.html">single-seed deep dive</a> · <a href="../runs/index.html">run tracker</a></footer>
+</body></html>

@@ -81,6 +81,35 @@ make evaluate figures # scorecard + docs/data/* contracts
 cd dashboard && npm ci && npm run build   # -> static site in ../docs
 ```
 
+## Run the findings-optimised MMM on your own data
+The competition's conclusions are packaged in `draftzone_mmm.run`. It fits the configuration that
+proved robust — regularised priors, seasonality control, uncertainty everywhere, a confound
+diagnostic, marginal ROI, and a confident-vs-test-first recommendation:
+
+```python
+from draftzone_mmm.run import run_mmm
+
+res = run_mmm(
+    df,                              # one row per week
+    kpi="conversions",               # your outcome column
+    channels=["tv", "search", "social"],
+    spend_suffix="_spend",           # -> tv_spend, search_spend, ...
+    exposure_suffix="_impressions",  # optional; defaults to spend
+    controls=["price", "promo"],     # optional observed confounders
+    date="week",
+)
+print(res.summary())                 # contributions+CIs, confound, marginal ROI, verdicts
+res.contributions; res.roi; res.recommend()
+```
+It is deliberately conservative: when the confound is high and the posterior is wide it tells you to
+**test first** rather than hand you a false answer. For a head-to-head of engines on your data, use
+the competition harness (`scripts/engine_leaderboard.py`).
+
+Site pages: **[results & recommendations](docs/results/index.html)** ·
+**[how the competition works](docs/process/index.html)** ·
+**[multi-seed leaderboard](docs/robustness/index.html)**.
+
 ## Status
-Productionized: new dataset + reproducible pipeline + interactive dashboard + graded recovery.
+Productionized: new dataset + reproducible pipeline + interactive dashboard + graded recovery +
+a multi-seed engine competition + a packaged, findings-optimised runner (`draftzone_mmm.run`).
 See `docs/PROTOTYPE_FINDINGS.md` for the original prototype this was built from.

@@ -621,10 +621,12 @@ def build_index_html(manifest):
 <p>We regenerate the data under different seeds and assumptions to see what survives. Every run measures
 the same things: how badly observational MMM is fooled by the spend↔season confound, how much a per-channel
 geo-experiment repairs it, whether marginal ROI is trustworthy, and what an idealized test-and-learn program
-can actually attain. Open a run for the full report. <a href="../engines/index.html">Engine leaderboard →</a>
-&nbsp;·&nbsp; <a href="../robustness/index.html">Robustness across seeds →</a>
+can actually attain. <a href="../results/index.html">Results &amp; recommendations →</a>
+&nbsp;·&nbsp; <a href="../process/index.html">How it works →</a>
+&nbsp;·&nbsp; <a href="../robustness/index.html">Multi-seed leaderboard →</a>
+&nbsp;·&nbsp; <a href="../engines/index.html">Single-seed deep dive →</a>
 &nbsp;·&nbsp; <a href="../ladder/index.html">Spend ladders →</a>
-&nbsp;·&nbsp; <a href="../index.html">Interactive dashboard →</a></p>
+&nbsp;·&nbsp; <a href="../index.html">Dashboard →</a></p>
 </div></header>
 <main class="wrap"><section>
 <div class="card">{table}</div>
