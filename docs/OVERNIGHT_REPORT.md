@@ -210,3 +210,49 @@ overlap, not a podium — which is the whole point.
 
 Real Meta Robyn (2000×5, plain + calibrated) and the geo control-spectrum remain one-seed documented
 results; the fast sweep covers the engines cheap enough to run at best config across 10 datasets.
+
+---
+
+# Multi-seed leaderboard for ALL engines + refreshed single-seed page (follow-up 3)
+
+Ran the **full pipeline** (every engine, incl. the geo control-spectrum and real Meta Robyn) on
+seeds 77 and 2025, each snapshotting all 13 engines. This (a) refreshes the single-dataset
+leaderboard with both fixes and (b) gives the slow deep-dive engines a multi-seed distribution, so
+the [multi-seed leaderboard](robustness/index.html) is now the canonical ranking for *every* engine.
+
+## (a) Single-dataset leaderboard refreshed
+The seed-2025 [engines page](engines/index.html) was re-run with the regularised frequentist + ladder
+and the full engine set — the "⚠ diverged" frequentist row is now a real result. That page is
+reframed as the **per-seed deep dive** (full figure + callouts); the multi-seed page is canonical.
+
+## (b) Multi-seed leaderboard, all engines (national n=11, deep-dives n=2)
+
+| engine | n | avg rank ↓ | wins | median MAE | spread | bias |
+|--------|--:|-----------:|-----:|-----------:|-------:|-----:|
+| Meridian (Fourier) | 11 | 2.7 | 3 | 54 | ±14 | +17% |
+| Robyn-style | 11 | 2.8 | 4 | 44 | ±19 | −22% |
+| Meridian (AKS) | 11 | 3.2 | 4 | 47 | **±36** | +6% |
+| PyMC (obs) | 11 | 4.0 | 0 | 52 | ±20 | +13% |
+| Spend ladder (fixed) | 11 | 4.0 | 0 | 63 | ±22 | +17% |
+| PyMC (anchored) | 11 | 5.7 | 0 | 79 | ±13 | −37% |
+| Naive OLS | 11 | 6.3 | 0 | 79 | ±15 | −17% |
+| Meta Robyn (real) | 2 | 7.0 | 0 | 77 | ±25 | −48% |
+| Meta Robyn (calibrated) | 2 | 7.0 | 0 | 78 | ±17 | −49% |
+| Frequentist NLS (fixed) | 11 | 8.2 | 0 | 129 | ±56 | +39% |
+
+The picture holds: the **top three (Fourier, Robyn-style, AKS) are tied within the across-seed
+noise**; AKS keeps the largest spread (±36) — confirming the "no stable champion" finding now that
+all engines are on the same multi-seed footing.
+
+## Honest caveats on the n=2 deep-dives
+- **Only 2 seeds** for geo + Robyn — indicative, not a distribution. The page shows `n` so this is
+  explicit.
+- **Mixed Robyn budgets**: seed 77 ran 1500×3, seed 2025 ran 2000×5 (to keep the batch tractable),
+  so the Robyn n=2 mixes configurations — read its spread loosely.
+- **Calibration didn't reliably help across the 2 seeds** (real median 77, calibrated 78): it helped
+  on seed 2025 (−64%→−48%) but the benefit is seed-dependent, consistent with the earlier finding
+  that calibration is capped by the experiment readout's own accuracy.
+
+The natural next investment is more **full** runs (geo + Robyn at a fixed budget) to turn those n=2
+rows into real distributions — but the machinery now does this with one command per seed
+(`make` → `run_all_engines.sh`), each feeding the canonical multi-seed leaderboard automatically.
