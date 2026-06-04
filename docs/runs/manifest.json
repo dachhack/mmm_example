@@ -1,5 +1,30 @@
 [
   {
+    "id": "seed77",
+    "label": "seed77",
+    "seed": 77,
+    "timestamp": "2026-06-04T16:38:33Z",
+    "assumptions": {
+      "confound": 0.6,
+      "baseline_share": "46%",
+      "saturation": "stable",
+      "weeks": 156,
+      "markets": 80
+    },
+    "mae_before": 49.778333785844005,
+    "mae_after": 79.30969959098476,
+    "uc_before": -20.312265758074076,
+    "uc_after": 30.53317391472867,
+    "pp_coverage": 32.1,
+    "attainable_lift": 5.329250924103968,
+    "weeks_to_converge": 39,
+    "rounds_to_converge": 3,
+    "weeks_per_cycle": 13,
+    "exp90_smart": 18.541666666666668,
+    "exp90_roundrobin": 16.708333333333332,
+    "robust_moves": ""
+  },
+  {
     "id": "seed2025",
     "label": "seed2025",
     "seed": 2025,

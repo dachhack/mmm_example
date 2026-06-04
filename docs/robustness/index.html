@@ -1,6 +1,6 @@
 <!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>MMM robustness — across seeds</title><style>
+<title>MMM multi-seed leaderboard</title><style>
 :root{--bg:#0e1116;--panel:#161b22;--ink:#e6edf3;--muted:#9aa7b4;--line:#2a313c;--accent:#4da3ff;--good:#2ca02c;--bad:#d62728;--warn:#d9a200}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
 .wrap{max-width:980px;margin:0 auto;padding:0 20px}a{color:var(--accent)}
@@ -30,10 +30,11 @@ img{max-width:100%;border-radius:8px;border:1px solid var(--line);margin:8px 0}
 </style></head><body>
 <header class="hero"><div class="wrap">
 <div class="kicker">A Skeptic's Guide to Marketing Mix Modeling</div>
-<h1>Robustness across datasets</h1>
-<p class="sub">10 synthetic worlds (seeds 101, 202, 2025, 303, 404, 505, 606, 707, 808, 909) — which engines are
-reliably good, not just lucky on one. <a href="../engines/index.html">← engine leaderboard</a> ·
-<a href="../runs/index.html">run tracker</a></p>
+<h1>Multi-seed leaderboard</h1>
+<p class="sub">11 synthetic worlds (seeds 101, 202, 2025, 303, 404, 505, 606, 707, 77, 808, 909) — which engines are
+reliably good, not just lucky on one. This is the canonical ranking; the
+<a href="../engines/index.html">single-dataset leaderboard</a> is a per-seed deep dive with the
+full engine set and figures. <a href="../runs/index.html">run tracker</a></p>
 <p>A single leaderboard answers "who won this dataset?"; that ranking is unstable. This page answers
 "who wins on average, and how often?" — the only fair way to compare methods. <b>Average rank</b> and
 <b>win-rate</b> are computed among non-diverged national engines within each run; <b>MAE spread</b>
@@ -42,11 +43,11 @@ the Bayesian engines (a recovery you couldn't sample isn't a recovery).</p>
 </div></header>
 <main class="wrap">
 <section><div class="card">
-<h2>National engines — ranked by average rank across 10 seeds</h2>
-<div class="tablewrap"><table><thead><tr><th>engine</th><th>runs</th><th>avg rank ↓</th><th>wins</th><th>median MAE</th><th>MAE spread</th><th>mean bias</th><th>CI cov</th><th>diverged</th><th>ESS / R̂</th></tr></thead><tbody><tr><td>Robyn-style (Python reimpl.)</td><td>10</td><td>2.6</td><td>4</td><td>42</td><td>±21</td><td>-21%</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Google Meridian (national, Fourier)</td><td>10</td><td>2.8</td><td>3</td><td>56</td><td>±14</td><td>+17%</td><td>100%</td><td>—</td><td>—</td></tr><tr><td>Meridian (national, AKS)</td><td>10</td><td>3.4</td><td>3</td><td>48</td><td>±37</td><td>+7%</td><td>87%</td><td>—</td><td>—</td></tr><tr><td>DraftZone PyMC (obs)</td><td>10</td><td>4.0</td><td>0</td><td>56</td><td>±21</td><td>+12%</td><td>90%</td><td>—</td><td>653 / 1.009</td></tr><tr><td>Spend ladder (curve fit)</td><td>10</td><td>4.1</td><td>0</td><td>64</td><td>±21</td><td>+21%</td><td>83%</td><td>—</td><td>—</td></tr><tr><td>DraftZone PyMC (anchored)</td><td>10</td><td>5.4</td><td>0</td><td>80</td><td>±14</td><td>-38%</td><td>95%</td><td>—</td><td>240 / 1.043</td></tr><tr><td>Meta Robyn (experiment-calibrated)</td><td>1</td><td>6.0</td><td>0</td><td>77</td><td>±0</td><td>-48%</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Naive OLS</td><td>10</td><td>6.1</td><td>0</td><td>83</td><td>±15</td><td>-17%</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Frequentist NLS</td><td>10</td><td>8.0</td><td>0</td><td>131</td><td>±56</td><td>+41%</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Meta Robyn (R 3.12.1)</td><td>1</td><td>9.0</td><td>0</td><td>102</td><td>±0</td><td>-64%</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Meridian (naive lift→prior)</td><td>1</td><td>11.0</td><td>0</td><td>150</td><td>±0</td><td>+19%</td><td>50%</td><td>—</td><td>—</td></tr></tbody></table></div>
+<h2>National engines — ranked by average rank across 11 seeds</h2>
+<div class="tablewrap"><table><thead><tr><th>engine</th><th>runs</th><th>avg rank ↓</th><th>wins</th><th>median MAE</th><th>MAE spread</th><th>mean bias</th><th>CI cov</th><th>diverged</th><th>ESS / R̂</th></tr></thead><tbody><tr><td>Google Meridian (national, Fourier)</td><td>11</td><td>2.7</td><td>3</td><td>54</td><td>±14</td><td>+17%</td><td>98%</td><td>—</td><td>—</td></tr><tr><td>Robyn-style (Python reimpl.)</td><td>11</td><td>2.9</td><td>4</td><td>44</td><td>±21</td><td>-22%</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Meridian (national, AKS)</td><td>11</td><td>3.2</td><td>4</td><td>47</td><td>±36</td><td>+6%</td><td>88%</td><td>—</td><td>—</td></tr><tr><td>DraftZone PyMC (obs)</td><td>11</td><td>4.0</td><td>0</td><td>52</td><td>±20</td><td>+13%</td><td>89%</td><td>—</td><td>711 / 1.009</td></tr><tr><td>Spend ladder (curve fit)</td><td>11</td><td>4.0</td><td>0</td><td>63</td><td>±22</td><td>+17%</td><td>82%</td><td>—</td><td>—</td></tr><tr><td>DraftZone PyMC (anchored)</td><td>11</td><td>5.7</td><td>0</td><td>79</td><td>±13</td><td>-37%</td><td>95%</td><td>—</td><td>230 / 1.043</td></tr><tr><td>Naive OLS</td><td>11</td><td>6.3</td><td>0</td><td>79</td><td>±15</td><td>-17%</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Meta Robyn (experiment-calibrated)</td><td>2</td><td>6.5</td><td>0</td><td>69</td><td>±8</td><td>-43%</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Meta Robyn (R 3.12.1)</td><td>2</td><td>7.0</td><td>0</td><td>77</td><td>±25</td><td>-48%</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Frequentist NLS</td><td>11</td><td>8.2</td><td>0</td><td>129</td><td>±56</td><td>+39%</td><td>—</td><td>—</td><td>—</td></tr><tr><td>Meridian (naive lift→prior)</td><td>1</td><td>11.0</td><td>0</td><td>150</td><td>±0</td><td>+19%</td><td>50%</td><td>—</td><td>—</td></tr></tbody></table></div>
 <p class="small">Each seed regenerates everything (data, experiments, sealed truth), so results are
 recomputed every run — nothing is reused. Lower average rank is better; "wins" counts datasets where
-the engine was #1; "MAE spread" is the across-seed std (lower = more stable). With only 10
+the engine was #1; "MAE spread" is the across-seed std (lower = more stable). With only 11
 run(s) this is indicative, not final — more seeds tighten it.</p>
 </div></section>
 <section><div class="card">
@@ -54,7 +55,7 @@ run(s) this is indicative, not final — more seeds tighten it.</p>
 <p>Geo engines are graded against the geo world's own (harder) answer key and are dominated by the
 unobserved demand confounder, so they are not part of the national horse race. Summarised here to
 confirm the confound result reproduces across seeds.</p>
-<div class="tablewrap"><table><thead><tr><th>geo engine</th><th>runs</th><th>median MAE</th><th>mean bias</th></tr></thead><tbody><tr><td>Meridian (geo + proxy control, 0.98)</td><td>1</td><td>91</td><td>+68%</td></tr><tr><td>Meridian (geo + proxy control, 0.78)</td><td>1</td><td>153</td><td>+114%</td></tr><tr><td>Meridian (geo panel)</td><td>1</td><td>164</td><td>+123%</td></tr></tbody></table></div>
+<div class="tablewrap"><table><thead><tr><th>geo engine</th><th>runs</th><th>median MAE</th><th>mean bias</th></tr></thead><tbody><tr><td>Meridian (geo + proxy control, 0.98)</td><td>2</td><td>87</td><td>+65%</td></tr><tr><td>Meridian (geo + proxy control, 0.78)</td><td>2</td><td>148</td><td>+112%</td></tr><tr><td>Meridian (geo panel)</td><td>2</td><td>161</td><td>+122%</td></tr></tbody></table></div>
 </div></section>
 </main>
 <footer class="wrap">Generated by <code>scripts/robustness.py</code> from per-seed snapshots.</footer>
