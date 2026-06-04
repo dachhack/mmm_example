@@ -290,18 +290,29 @@ def main():
         if grs:
             bits.append(f"our Python reimplementation of its method (MAE {grs['mae']:.0f}, bias "
                         f"{grs['media_bias']:+.0f}%)")
+        split_txt = ""
+        if gmr:
+            split_txt = (
+                " The real Robyn shows a telling split-vs-level pattern: its channel <i>shares</i> are "
+                f"excellent (DECOMP.RSSD {rssd:.3f} — effect shares hug spend shares, which here also "
+                "match truth), but it under-credits the media <i>level</i> "
+                f"(bias {gmr['media_bias']:+.0f}%) because Prophet's flexible trend soaks up the "
+                "seasonal-confounded variance into the baseline. Our leaner reimplementation (fixed "
+                "linear trend + Fourier season, not Prophet) leaves more for media and lands closer"
+                + (f" ({grs['media_bias']:+.0f}% bias, MAE {grs['mae']:.0f})" if grs else "")
+                + " — same method, different baseline flexibility, different answer.")
         robyn_note = (
             '<div class="callout"><b>Meta Robyn — the method, two implementations.</b> ' + " and ".join(bits)
             + ". Robyn is frequentist: ridge regression on a Prophet trend/season decomposition, with "
             "<b>Nevergrad</b> searching adstock/Hill hyperparameters against two objectives — fit "
-            "(NRMSE) and <b>DECOMP.RSSD</b>, its signature regulariser that pulls each channel's "
-            "<i>effect</i> share toward its <i>spend</i> share. Applying this project's lessons: we feed "
-            "Robyn the same Prophet seasonality that lets it dodge the spend↔season confound (the "
-            "control no engine can skip), and we recognise DECOMP.RSSD as a <b>prior</b> — here channel "
-            "ROIs happen to be similar, so share-matching is a well-matched prior and Robyn lands among "
-            "the better national engines; on a mix with one very high- or low-ROI channel it would "
-            "mislead. Like every engine here it has no experiment, so it cannot escape the confound any "
-            "better than its controls allow — the throughline of the whole leaderboard.</div>")
+            "(NRMSE) and <b>DECOMP.RSSD</b>, its signature regulariser pulling each channel's "
+            "<i>effect</i> share toward its <i>spend</i> share." + split_txt
+            + " DECOMP.RSSD is itself a <b>prior</b>: here channel ROIs are similar so share-matching "
+            "helps the split, but on a mix with one very high- or low-ROI channel it would mislead. And "
+            "like every engine here Robyn has no experiment, so it cannot escape the confound better "
+            "than its baseline controls allow — the throughline of the whole leaderboard. (Robyn is "
+            "usually run longer — 2000×5 — with a human picking the model off the Pareto front; this is "
+            "an automated 1000×3 knee.)</div>")
 
     gt_total = sum(gtd[f"media_{c}"] for c in CHANNELS)
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">

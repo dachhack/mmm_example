@@ -70,6 +70,7 @@ hp[, score := nz(nrmse) + nz(decomp.rssd)]
 best <- hp[which.min(score)]
 best_sol <- best$solID
 n_weeks <- InputCollect$rollingWindowLength
+if (is.null(n_weeks) || !is.numeric(n_weeks) || length(n_weeks) != 1) n_weeks <- nrow(dt)
 
 # media rows are named by the modelled variable (here the exposure/impression var); map each row
 # back to its channel by prefix so we are robust to spend- vs exposure-naming.
