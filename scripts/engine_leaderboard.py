@@ -277,6 +277,32 @@ def main():
             "<b>randomized experiment</b> breaks a confounder you can't see. That is why this project "
             "triangulates MMM with geo tests instead of trusting any single fit." + "</div>")
 
+    robyn_note = ""
+    gmr, grs = _g("meta_robyn"), _g("robyn_style")
+    if gmr or grs:
+        bits = []
+        if gmr:
+            mr_e = next(e for e in engines if e["engine"] == "meta_robyn")
+            rssd = mr_e.get("fit", {}).get("decomp_rssd")
+            rssd_txt = f", DECOMP.RSSD {rssd:.3f}" if rssd is not None else ""
+            bits.append(f"the <b>real Meta Robyn</b> R package (MAE {gmr['mae']:.0f}, bias "
+                        f"{gmr['media_bias']:+.0f}%{rssd_txt})")
+        if grs:
+            bits.append(f"our Python reimplementation of its method (MAE {grs['mae']:.0f}, bias "
+                        f"{grs['media_bias']:+.0f}%)")
+        robyn_note = (
+            '<div class="callout"><b>Meta Robyn — the method, two implementations.</b> ' + " and ".join(bits)
+            + ". Robyn is frequentist: ridge regression on a Prophet trend/season decomposition, with "
+            "<b>Nevergrad</b> searching adstock/Hill hyperparameters against two objectives — fit "
+            "(NRMSE) and <b>DECOMP.RSSD</b>, its signature regulariser that pulls each channel's "
+            "<i>effect</i> share toward its <i>spend</i> share. Applying this project's lessons: we feed "
+            "Robyn the same Prophet seasonality that lets it dodge the spend↔season confound (the "
+            "control no engine can skip), and we recognise DECOMP.RSSD as a <b>prior</b> — here channel "
+            "ROIs happen to be similar, so share-matching is a well-matched prior and Robyn lands among "
+            "the better national engines; on a mix with one very high- or low-ROI channel it would "
+            "mislead. Like every engine here it has no experiment, so it cannot escape the confound any "
+            "better than its controls allow — the throughline of the whole leaderboard.</div>")
+
     gt_total = sum(gtd[f"media_{c}"] for c in CHANNELS)
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -298,6 +324,7 @@ key (a lower media total, because targeting concentrates spend into Hill saturat
 <main class="wrap"><section>
 <div class="card"><img src="leaderboard.png" alt="engine comparison">
 {table}
+{robyn_note}
 {mer_note}
 {ladder_note}
 {calib_note}

@@ -64,17 +64,22 @@ hp  <- rbindlist(lapply(OutputModels[grepl("^trial[0-9]+$", names(OutputModels))
                         function(t) t$resultCollect$resultHypParam), fill = TRUE)
 agg <- rbindlist(lapply(OutputModels[grepl("^trial[0-9]+$", names(OutputModels))],
                         function(t) t$resultCollect$xDecompAgg), fill = TRUE)
+saveRDS(OutputModels, file.path(repo, "artifacts", "meta_robyn_models.rds"))  # so we never re-fit to re-extract
 nz <- function(x) { r <- max(x) - min(x); if (r > 0) (x - min(x)) / r else rep(0, length(x)) }
 hp[, score := nz(nrmse) + nz(decomp.rssd)]
 best <- hp[which.min(score)]
 best_sol <- best$solID
 n_weeks <- InputCollect$rollingWindowLength
 
-media <- agg[solID == best_sol & rn %in% spend_vars]
-est <- setNames(media$xDecompAgg / n_weeks, media$rn)
+# media rows are named by the modelled variable (here the exposure/impression var); map each row
+# back to its channel by prefix so we are robust to spend- vs exposure-naming.
+chan_of <- function(x) { hit <- chans[vapply(chans, function(c) startsWith(x, c), logical(1))]; if (length(hit)) hit[1] else NA }
+media <- agg[solID == best_sol & (rn %in% expo_vars | rn %in% spend_vars)]
+media[, channel := vapply(rn, chan_of, character(1))]
+est <- setNames(media$xDecompAgg / n_weeks, media$channel)
 
 channels <- list()
-for (i in seq_along(chans)) channels[[chans[i]]] <- list(est_contrib = unname(est[spend_vars[i]]), ci = NULL)
+for (i in seq_along(chans)) channels[[chans[i]]] <- list(est_contrib = unname(est[chans[i]]), ci = NULL)
 
 results <- list(
   engine = "meta_robyn", label = "Meta Robyn (R 3.12.1)", bayesian = FALSE,
