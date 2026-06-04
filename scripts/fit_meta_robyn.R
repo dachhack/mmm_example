@@ -97,5 +97,5 @@ write(toJSON(results, auto_unbox = TRUE, pretty = TRUE, null = "null"), out_abs)
 
 cat(sprintf("Selected model %s: NRMSE=%.4f  DECOMP.RSSD=%.3f  R2=%.3f\n",
             best_sol, best$nrmse, best$decomp.rssd, best$rsq_train))
-for (i in seq_along(chans)) cat(sprintf("  %-22s est=%6.1f\n", chans[i], est[spend_vars[i]]))
+for (i in seq_along(chans)) cat(sprintf("  %-22s est=%6.1f\n", chans[i], est[chans[i]]))
 cat(sprintf("Wrote %s\n", out_abs))

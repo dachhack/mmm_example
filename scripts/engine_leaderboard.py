@@ -310,9 +310,11 @@ def main():
             + " DECOMP.RSSD is itself a <b>prior</b>: here channel ROIs are similar so share-matching "
             "helps the split, but on a mix with one very high- or low-ROI channel it would mislead. And "
             "like every engine here Robyn has no experiment, so it cannot escape the confound better "
-            "than its baseline controls allow — the throughline of the whole leaderboard. (Robyn is "
-            "usually run longer — 2000×5 — with a human picking the model off the Pareto front; this is "
-            "an automated 1000×3 knee.)</div>")
+            "than its baseline controls allow — the throughline of the whole leaderboard. "
+            + (f"(Run at Robyn's full converged config, {mr_e.get('iterations','?')}×{mr_e.get('trials','?')} "
+               "iterations×trials, with the balanced-knee model auto-selected; a practitioner picking a "
+               "higher-media model off the Pareto front by hand could lift the level further.)"
+               if gmr else "") + "</div>")
 
     gt_total = sum(gtd[f"media_{c}"] for c in CHANNELS)
     html = f"""<!doctype html><html lang="en"><head><meta charset="utf-8">
