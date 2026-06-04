@@ -432,6 +432,7 @@
     "noise_frac": 0.18,
     "realized_corr_spend_demand": 0.7407354966017872,
     "demand_proxy_fidelity": 0.7799902465134877,
+    "demand_proxy_hi_fidelity": 0.9771942962691659,
     "avg_contribution_decomposition": {
       "paid_social": 237.71448280775485,
       "paid_search": 142.09483558217335,

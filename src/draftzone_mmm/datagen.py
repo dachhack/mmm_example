@@ -553,6 +553,8 @@ def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30,
     # how you fight an otherwise-unobserved geo confounder. Drawn from a DEDICATED rng so adding the
     # proxy does not perturb the rest of the panel's random stream.
     demand_proxy = d + np.random.default_rng(seed + 4242).normal(0, proxy_noise, (n_geos, T))
+    # a near-perfect proxy too, to trace the other end of the control-quality spectrum.
+    demand_proxy_hi = d + np.random.default_rng(seed + 4343).normal(0, 0.22, (n_geos, T))
 
     rows = []
     summed_contrib = {c: np.zeros(T) for c in CHANNELS}
@@ -599,7 +601,8 @@ def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30,
                        price_index=float(ctrl["price_index"][t]),
                        competitor_pressure=float(comp[t]),
                        holiday_flag=float(nat_df["holiday_flag"].to_numpy()[t]),
-                       demand_proxy=float(demand_proxy[g, t]))
+                       demand_proxy=float(demand_proxy[g, t]),
+                       demand_proxy_hi=float(demand_proxy_hi[g, t]))
             row.update(by_gt[(g, t)])
             panel.append(row)
             demand_series.append(d[g, t])
@@ -613,6 +616,7 @@ def generate_geo_panel(nat_df, truth, seed=606, n_geos=50, idio_sigma=0.30,
         confound=float(confound), noise_frac=float(noise_frac),
         realized_corr_spend_demand=realized_confound,
         demand_proxy_fidelity=proxy_fidelity,
+        demand_proxy_hi_fidelity=float(np.corrcoef(demand_proxy_hi.ravel(), d.ravel())[0, 1]),
         avg_contribution_decomposition={c: float(summed_contrib[c].mean()) for c in CHANNELS},
         note="Geo-world truth: summed-across-geos avg weekly contribution per channel. Slightly "
              "below the national truth by the Hill aggregation (Jensen) gap.",
