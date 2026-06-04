@@ -150,21 +150,20 @@ def _is_geo(e):
     return "_geo" in e["engine"]
 
 
-def main():
-    df = load_national()
+def load_truths():
+    """Return (national gtd, geo gtd). Geo engines are graded against the geo world's own key."""
     sealed = json.load(open(SEALED))
     gtd = sealed["avg_contribution_decomposition"]
-    # geo engines fit the geo PANEL — a different world (targeted-spend confounder + Jensen gap), so
-    # they are graded against the panel's OWN sealed answer key, not the national one.
     geo_block = sealed.get("geo_panel", {}).get("avg_contribution_decomposition")
     geo_gtd = {f"media_{c}": v for c, v in geo_block.items()} if geo_block else gtd
-    truth_for = lambda e: geo_gtd if _is_geo(e) else gtd  # noqa: E731
+    return sealed, gtd, geo_gtd
 
+
+def discover_engines(df):
+    """Build the full engine list from the current artifacts (the two point engines fit live)."""
     engines = [naive_results(df), freq_results(df),
                pymc_results(df, ARTIFACTS / "idata.nc", "DraftZone PyMC (obs)", "pymc_obs"),
                pymc_results(df, ARTIFACTS / "idata_anchored.nc", "DraftZone PyMC (anchored)", "pymc_anchored")]
-    # auto-discover every Meridian variant written to artifacts/ (google_meridian*.json), plus
-    # the legacy filenames and the spend-ladder engine.
     seen = set()
     for path in sorted(ARTIFACTS.glob("google_meridian*.json")) + [
             ARTIFACTS / "meridian_results.json", ARTIFACTS / "meridian_calibrated_results.json",
@@ -180,6 +179,14 @@ def main():
         if m["engine"] == "spend_ladder":
             m["label"] = "Spend ladder (curve fit)"
         engines.append(m)
+    return engines
+
+
+def main():
+    df = load_national()
+    sealed, gtd, geo_gtd = load_truths()
+    truth_for = lambda e: geo_gtd if _is_geo(e) else gtd  # noqa: E731
+    engines = discover_engines(df)
 
     skip = {e["engine"] for e in engines if diverged(e, truth_for(e))}
     OUT.mkdir(parents=True, exist_ok=True)
