@@ -68,8 +68,10 @@ many independent datasets. Three results matter more than any single number:</p>
 Robyn-style) are <b>tied within the run-to-run noise</b>; the apparent winner changes with the data.
 Anyone who shows you one leaderboard and declares a champion is fooling themselves. But the choice is
 not arbitrary either — <b>different engines suit different data</b> (see the
-<a href="../conditional/index.html">which-engine-when guide</a>): the spend ladder earns its keep when
-channels are saturated, while a flexible engine like Robyn does relatively better with headroom.</li>
+<a href="../conditional/index.html">which-engine-when guide</a>): Meridian's Fourier setup is great on
+saturated channels but poor with headroom, the spend ladder is cleanest with headroom, and the
+experiment anchor helps with headroom yet hurts when saturated — while Meridian's AKS setup is the
+safe all-rounder.</li>
 <li><b>An observational MMM is only as trustworthy as its confound control.</b> Spend chases demand
 (here, correlation ~0.6 with season), so without strong seasonality controls — and ideally a
 randomized experiment — attribution is biased in a direction you cannot know from the fit.</li>

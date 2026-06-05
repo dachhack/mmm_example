@@ -46,7 +46,10 @@ the engines in each regime.</p>
 <div class="tablewrap"><table><thead><tr><th>engine</th><th>High saturation (low headroom)<br><span class='small'>scale 0.5, n=4/seed-set</span></th><th>Medium saturation<br><span class='small'>scale 1.0, n=4/seed-set</span></th><th>Low saturation (headroom)<br><span class='small'>scale 2.0, n=4/seed-set</span></th></tr></thead><tbody><tr><td>Meridian (national, AKS)</td><td>3.2 (92)</td><td>2.2 (43)</td><td>2.5 (37)</td></tr><tr><td>Robyn-style (Python reimpl.)</td><td>4.2 (102)</td><td>2.0 (45)</td><td>3.5 (44)</td></tr><tr><td>Spend ladder (curve fit)</td><td>3.5 (88)</td><td>4.5 (56)</td><td>2.5 (29)</td></tr><tr><td>Google Meridian (national, Fourier)</td><td>1.8 (72)</td><td>4.0 (54)</td><td>6.8 (67)</td></tr><tr><td>DraftZone PyMC (obs)</td><td>3.5 (88)</td><td>5.8 (65)</td><td>4.8 (53)</td></tr><tr><td>DraftZone PyMC (anchored)</td><td>7.2 (124)</td><td>4.8 (77)</td><td>2.8 (40)</td></tr><tr><td>Naive OLS</td><td>5.5 (114)</td><td>5.8 (78)</td><td>6.8 (70)</td></tr><tr><td>Frequentist NLS</td><td>7.0 (145)</td><td>7.0 (161)</td><td>6.5 (104)</td></tr></tbody></table></div>
 <p class="small">Each cell: <b>average rank (median MAE)</b> within that regime; lower rank is better.
 Engines sorted by mean rank across regimes. "—" = not run / diverged in that regime.</p>
-<p><b>Does the picture actually change with the data?</b> The clearest signal is the <b>spend ladder</b> (the experiment that measures the curve): its average rank goes from <b>3.5</b> at high saturation to <b>2.5</b> at low saturation — the shift is small at this sample size — suggestive, not conclusive.</p>
+<p><b>Yes — the best engine depends on the data.</b> Holding everything else fixed and varying only saturation, the rankings move enough to change the recommendation. The most regime-sensitive engine is <b>Google Meridian</b> (avg rank 1.8 when saturated → 6.8 with headroom).</p>
+<p><b>The experiment <i>anchor</i> flips sign with saturation.</b> Anchoring our Bayesian fit to the geo lift is <b>worst</b> when channels are saturated (rank 7.2) but <b>good</b> with headroom (rank 2.8): a lift test on a saturated channel is a small, noisy signal whose curve-aware translation is unreliable, whereas on a near-linear channel the lift is clean and the anchor helps. This refines the blunt 'the anchor hurts' rule into a conditional one.</p>
+<p><b>The spend ladder is strongest with headroom, not saturation</b> (best at low saturation, rank 2.5). With a near-linear response its curve fit is clean; heavy saturation gives it small, noisy lifts and it slips to the middle. (Its earlier billing — 'the ladder cracks saturated channels' — was about beating a <i>single-cell experiment</i> on those channels, not about beating <i>observational engines</i> on overall accuracy. The competition corrected the framing.)</p>
+<p><b>The safe default is Meridian</b> — lowest combined rank-and-spread, never bad in any regime. If you don't know your saturation, start there.</p>
 </div></section>
 <section><div class="card">
 <h2>Decision guide</h2>
@@ -61,8 +64,11 @@ rather than trusting any single observational engine.</p>
 <ul>
 <li><b>Regularise</b> — the unregularised engines are the ones that diverge, in every regime.</li>
 <li><b>Control seasonality</b> and measure your confound.</li>
-<li><b>Experiments beat confounding</b> — and the spend ladder earns its cost most where channels
-are saturated, which is precisely where an observational fit is least able to recover the curve.</li>
+<li><b>Experiments beat confounding</b> — but read the conditional result honestly: a lift test is a
+clean signal on a near-linear channel and a small, noisy one on a saturated channel, so the
+experiment <i>anchor</i> helps with headroom and hurts when saturated.</li>
+<li><b>Naive and frequentist regression never win a regime</b> — there is no kind of data here where
+the un-regularised or un-saturated baselines are the right tool.</li>
 </ul>
 </div></section>
 </main>

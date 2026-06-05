@@ -102,6 +102,24 @@ class MMMResult:
         ]
         for _, r in self.recommend().iterrows():
             lines.append(f"  {r['channel']:20s} {r['verdict']}")
+        # regime-aware steer from the competition's "which engine when" study
+        sat = d.get("saturation", float("nan"))
+        if np.isfinite(sat):
+            if sat > 0.6:
+                regime = (f"  • Your channels look SATURATED (operating saturation ~{sat:.0%}). This is the "
+                          "hardest regime: getting the response CURVE right dominates, a single lift test is a "
+                          "small/noisy signal whose anchor is unreliable, and engines disagree most. Measure the "
+                          "curve with a SPEND LADDER rather than assuming it, and treat any single fit (this one "
+                          "included) with extra skepticism.")
+            elif sat < 0.35:
+                regime = (f"  • Your channels have HEADROOM (operating saturation ~{sat:.0%}). The response is "
+                          "near-linear, so most engines agree and a clean geo lift / spend ladder is especially "
+                          "reliable here — a good regime to anchor on an experiment.")
+            else:
+                regime = (f"  • Your channels are MID-saturation (~{sat:.0%}). A well-configured Bayesian fit (this) "
+                          "or Robyn-style model is reasonable; confirm the big moves with an experiment.")
+        else:
+            regime = ""
         lines += [
             "",
             "Reminders from the competition:",
@@ -110,6 +128,8 @@ class MMMResult:
             "  • Act on the confident moves; route the 'test first' channels to a geo lift / spend",
             "    ladder — that is the only confound-immune evidence.",
         ]
+        if regime:
+            lines.append(regime)
         return "\n".join(lines)
 
 
@@ -226,6 +246,7 @@ def _summarise(idata, df, kpi, channels, sp, exp_s, exp_scale, exp_raw, Xc, cnam
     contrib_draws = {c: np.zeros((S, n)) for c in channels}
     mroi = np.zeros((S, len(channels)))
     avg_roi = np.zeros(len(channels))
+    sat_frac = np.zeros(len(channels))           # per-channel saturation = contribution / ceiling
     spend_mean = np.array([df[sp[c]].to_numpy(float).mean() for c in channels])
 
     def hill_ad(es, theta, hs, slope):
@@ -246,6 +267,7 @@ def _summarise(idata, df, kpi, channels, sp, exp_s, exp_scale, exp_raw, Xc, cnam
             d_contrib = (be[i] * f1).mean() - c_now[i]
             mroi[i, j] = d_contrib / (0.01 * spend_mean[j]) if spend_mean[j] > 0 else 0.0
         avg_roi[j] = c_now.mean() / spend_mean[j] if spend_mean[j] > 0 else 0.0
+        sat_frac[j] = float(np.mean(c_now / np.maximum(be, 1e-9)))   # operating saturation fraction
 
     # contributions table
     crows, total = [], np.zeros(S)
@@ -281,7 +303,8 @@ def _summarise(idata, df, kpi, channels, sp, exp_s, exp_scale, exp_raw, Xc, cnam
     confound = float(np.corrcoef(total_spend, season)[0, 1]) if season.std() > 0 else 0.0
 
     diagnostics = dict(r2=r2, confound=confound, ess_min=ess_min, rhat_max=rhat_max,
-                       n_weeks=n, kpi_per_period=float(y.mean()))
+                       n_weeks=n, kpi_per_period=float(y.mean()),
+                       saturation=float(np.mean(sat_frac)))
     return MMMResult(channels=list(channels), contributions=contributions, roi=roi,
                      diagnostics=diagnostics, idata=idata,
                      _draws=dict(mroi=mroi), _meta=dict(spend=spend_mean))
