@@ -39,6 +39,15 @@ def cf_label(cf):
     return "Weak confound" if cf < 0.45 else "Strong confound"
 
 
+def short(label):
+    """Distinct short engine names (keep the variant, e.g. Meridian Fourier vs Meridian AKS)."""
+    return (label.replace("Google ", "").replace("DraftZone ", "")
+            .replace(" (national, Fourier)", " Fourier").replace(" (national, AKS)", " AKS")
+            .replace(" (obs)", " obs").replace(" (anchored)", " anchored")
+            .replace(" (curve fit)", "").replace(" (Python reimpl.)", "")
+            .replace(" (R 3.12.1)", "").replace(" (experiment-calibrated)", " (calib)"))
+
+
 def _ranks(runs):
     """avg rank per national engine across a set of runs (lower=better)."""
     agg = rb.aggregate(runs)
@@ -79,7 +88,7 @@ def main():
         if not d:
             return "—"
         k = min(d, key=lambda k: d[k][0])
-        return f"{labels[k].split(' (')[0]} <span class='small'>({d[k][0]:.1f})</span>"
+        return f"{short(labels[k])} <span class='small'>({d[k][0]:.1f})</span>"
     grid_rows = [[sat_label(s)] + [best_in(s, c) for c in cfs] for s in sats]
     grid = mr._tbl(["saturation \\ confound"] + [cf_name[c] for c in cfs], grid_rows)
 
@@ -90,7 +99,7 @@ def main():
             return (f"{d[k][0]:.1f} ({d[k][1]:.0f})", d[k][0]) if k in d else ("—", np.inf)
         present = [k for k in eng_keys if any(k in ranks.get((s, c), {}) for s in sats)]
         present.sort(key=lambda k: np.mean([cell(s, k)[1] for s in sats if np.isfinite(cell(s, k)[1])] or [9]))
-        rows = [[labels[k].split(" (")[0]] + [cell(s, k)[0] for s in sats] for k in present]
+        rows = [[short(labels[k])] + [cell(s, k)[0] for s in sats] for k in present]
         return mr._tbl(["engine"] + [sat_label(s) for s in sats], rows)
     matrices = {c: matrix_for(c) for c in cfs}
 
@@ -106,7 +115,7 @@ def main():
     if sens:
         bits.append(
             f"<p><b>Yes — the best engine depends on the data.</b> Saturation alone reorders the field: "
-            f"<b>{labels[sens].split(' (')[0]}</b> goes from rank {rk(hi, base_c, sens):.1f} when channels "
+            f"<b>{short(labels[sens])}</b> goes from rank {rk(hi, base_c, sens):.1f} when channels "
             f"are saturated to {rk(lo, base_c, sens):.1f} with headroom. The 2D grid above turns that into "
             "a lookup: find your saturation row and confound column.</p>")
     # confound effect: does weak vs strong change the winner / does the anchor matter more under confound?
@@ -187,7 +196,7 @@ or un-saturated baselines the right tool.</li>
             d = ranks.get((s, c))
             if d:
                 k = min(d, key=lambda k: d[k][0])
-                print(f"  {sat_label(s):26s} / {cf_name[c]:24s} best: {labels[k].split(' (')[0]} ({d[k][0]:.1f})")
+                print(f"  {sat_label(s):26s} / {cf_name[c]:24s} best: {short(labels[k])} ({d[k][0]:.1f})")
 
 
 if __name__ == "__main__":
