@@ -256,3 +256,46 @@ all engines are on the same multi-seed footing.
 The natural next investment is more **full** runs (geo + Robyn at a fixed budget) to turn those n=2
 rows into real distributions — but the machinery now does this with one command per seed
 (`make` → `run_all_engines.sh`), each feeding the canonical multi-seed leaderboard automatically.
+
+---
+
+# Which engine when — 2D conditional study (saturation × confound)
+
+Extended the conditional study to a **2D factorial**: channel saturation (high/med/low) × spend↔demand
+confound (strong ~0.6 / weak ~0.3), 5 seeds per cell = **30 graded datasets**, every fast engine
+ranked within each cell. Page: [which engine when](conditional/index.html). It confirms — with a
+lookup table — that the best engine depends on the data.
+
+## Decision grid (most reliable engine, avg rank in parens)
+
+| saturation ＼ confound | Strong confound (~0.6) | Weak confound (~0.3) |
+|---|---|---|
+| **High saturation** | Meridian Fourier (1.6) | Meridian Fourier (1.6) |
+| **Medium saturation** | Meridian AKS (2.2) | Meridian Fourier (2.6) |
+| **Low saturation (headroom)** | **Spend ladder (2.6)** | **Robyn-style (1.8)** |
+
+## What the two axes each decide
+
+- **Saturation picks the family.** High saturation → Meridian (Fourier) is dominant and the confound
+  doesn't change it. With headroom the field opens up and experiments/flexible engines lead.
+- **Confound decides whether you need the experiment — most visibly at low saturation.** With headroom
+  and a **strong** confound, the **spend ladder** (the confound-immune experiment) wins; with a
+  **weak** confound, an **observational** engine (Robyn-style) is enough and the experiment isn't
+  worth its cost. That is the triangulation logic, finally measured rather than asserted: *run the
+  experiment when the confound is strong; skip it when it's weak.*
+- **Corrections the data forced on earlier hypotheses:** the spend ladder is strongest with
+  *headroom*, not saturation (clean near-linear curve fit); and the experiment *anchor* flips sign —
+  it hurts when saturated, helps with headroom. "The anchor always hurts" became a conditional rule.
+- **Invariant:** naive and frequentist regression win **no cell**; regularisation + seasonality
+  control are required everywhere.
+
+## Baked into the package
+`run_mmm` now estimates each channel's operating saturation and prints a regime-aware steer
+(measure the curve with a ladder when saturated; anchor on an experiment when there's headroom and
+the confound is high).
+
+## Process note
+The container was reclaimed twice mid-sweep (it kills detached `nohup` jobs). The skip-existing,
+checkpoint-committing design meant each reclaim cost nothing — 16/18 then 17/18 cells survived and
+the sweep resumed. Lesson logged: run long jobs as tracked background tasks, and design for
+interruption regardless.
