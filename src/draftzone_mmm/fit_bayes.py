@@ -60,6 +60,7 @@ def build_model(df, anchors=None, L=ADSTOCK_L):
         media = pt.zeros(T)
         slopes = {}
         betas = {}
+        fnat = {}
         for c in CHANNELS:
             a, b = THETA_PRIOR[c]
             theta = pm.Beta(f"theta_{c}", a, b)
@@ -70,18 +71,24 @@ def build_model(df, anchors=None, L=ADSTOCK_L):
             betas[c] = beta
             ad = _adstock_pt(pt, pt.as_tensor_variable(imp_padded[c]), lag_idx, wexp, theta)
             sat = ad ** slope / (ad ** slope + hs ** slope + 1e-9)
+            fnat[c] = pt.clip(pt.mean(sat), 1e-3, 0.97)   # model's national avg saturation fraction
             media = media + beta * sat
 
-        # Experiment calibration via a DiD LIKELIHOOD. The geo-experiment measured a causal
-        # lift (did) when exposure rose from a_low to a_high. With markets designed to sit at
-        # half-saturation (half_sat = a_low), the model predicts that lift as
-        #   did_pred = beta_c * (Hill(a_high; half_sat=a_low, slope_c) - 0.5),
-        # using the channel's OWN beta and slope. This pins beta (the shared ceiling) with a
-        # confound-immune measurement and breaks the beta<->half_sat degeneracy.
+        # Experiment calibration via a CURVE-AWARE DiD LIKELIHOOD. The geo-experiment measured a
+        # causal lift (did) when exposure rose from a_low to a_high. The test markets are scaled
+        # replicas of the national channel, so they operate at the NATIONAL saturation fraction
+        # f_nat (NOT half-saturation). Given f_nat, the market's half-sat is implied, so a campaign
+        # that multiplies exposure by r = a_high/a_low moves the fraction from f_nat to
+        #   f_high = R / (R + 1),  R = r^slope * f_nat/(1-f_nat),
+        # and the predicted lift is beta_c * (f_high - f_nat). Using the model's OWN f_nat (rather
+        # than assuming 0.5) makes the anchor correct when markets sit where the national channel
+        # does — translating the lift to the national operating point.
         for c, anc in anchors.items():
-            ratio = float(anc["a_high"]) / float(anc["a_low"])
-            f_high = ratio ** slopes[c] / (ratio ** slopes[c] + 1.0)
-            did_pred = betas[c] * (f_high - 0.5)
+            r = float(anc["a_high"]) / float(anc["a_low"])
+            fn = fnat[c]
+            R = (r ** slopes[c]) * fn / (1.0 - fn)
+            f_high = R / (R + 1.0)
+            did_pred = betas[c] * (f_high - fn)
             pm.Normal(f"{c}_anchor", mu=did_pred, sigma=float(anc["did_sd"]),
                       observed=float(anc["did"]))
 

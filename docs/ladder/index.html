@@ -1,0 +1,102 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Spend ladders — measuring the curve</title><style>
+:root{--bg:#0e1116;--panel:#161b22;--ink:#e6edf3;--muted:#9aa7b4;--line:#2a313c;--accent:#4da3ff;--good:#2ca02c;--bad:#d62728;--warn:#d9a200}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px}a{color:var(--accent)}
+header.hero{padding:54px 0 30px;border-bottom:1px solid var(--line);background:radial-gradient(1100px 360px at 50% -90px,#1b2b40 0,transparent 70%)}
+h1{font-size:2rem;margin:0 0 6px}.sub{color:var(--muted);margin:0 0 14px}
+.kicker{text-transform:uppercase;letter-spacing:2px;font-size:.72rem;color:var(--accent);font-weight:700;margin-bottom:8px}
+section{padding:34px 0;border-bottom:1px solid var(--line)}h2{font-size:1.4rem;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:600}
+.hit{color:var(--good);font-weight:700}.miss{color:var(--bad);font-weight:700}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:700}
+.pill.inc{background:rgba(44,160,44,.18);color:#69d36a}.pill.dec{background:rgba(214,39,40,.18);color:#ff6b6b}.pill.test{background:rgba(217,162,0,.18);color:#f0c64b}
+.callout{border-left:3px solid var(--accent);background:#1d2530;padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0}
+.callout.warn{border-left-color:var(--warn)}.callout.good{border-left-color:var(--good)}
+img{max-width:100%;border-radius:8px;border:1px solid var(--line);margin:8px 0}
+.metric{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0}.metric .m b{font-size:1.4rem;display:block}.metric .m span{color:var(--muted);font-size:.78rem}
+.small{font-size:.82rem;color:var(--muted)}footer{padding:36px 0 70px;color:var(--muted);font-size:.85rem}
+.tag{display:inline-block;background:#1d2530;border:1px solid var(--line);border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:.8rem}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0}table{min-width:520px}
+@media(max-width:640px){
+ .wrap{padding:0 14px}header.hero{padding:34px 0 22px}h1{font-size:1.5rem}h2{font-size:1.2rem}
+ .sub{font-size:.95rem}section{padding:24px 0}.card{padding:13px 14px}
+ th,td{padding:6px 7px;font-size:.84rem}.metric{gap:16px}.metric .m b{font-size:1.2rem}
+ body{font-size:15px}.kicker{font-size:.66rem}
+}
+</style></head><body>
+<header class="hero"><div class="wrap">
+<div class="kicker">A Skeptic's Guide to Marketing Mix Modeling</div>
+<h1>Spend ladders: measure the curve, don't assume it</h1>
+<p class="sub">Why a single lift test mis-sizes saturated channels — and what a multi-cell ladder
+costs to fix it. <a href="../engines/index.html">← engine leaderboard</a> ·
+<a href="../runs/index.html">run tracker</a></p>
+<p>A single geo test gives <b>one</b> point on a channel's response curve, so turning its lift into
+a national number means <i>assuming</i> the curve's shape and where you sit on it — the exact
+assumption that breaks on saturated channels. A <b>spend ladder</b> runs several cells at different
+spend levels (including cells <i>below</i> current spend), tracing several points so the curve can
+be <b>measured</b>. Below: the measured cells, the fitted curve, and the sealed truth — then the
+bill.</p>
+</div></header>
+<main class="wrap">
+
+<section><div class="card">
+<h2>1 · The ladder recovers the curve</h2>
+<img src="ladder_curves.png" alt="per-channel ladder curves vs truth">
+<p class="small">Each panel: blue points = pull-DOWN cells, orange = push-UP cells, dotted line =
+current operating point. The down cells pin the curve's <i>absolute level</i>; the up cells expose
+diminishing returns. Reading the contribution at the operating point becomes an
+<b>interpolation</b>, not the extrapolation a single always-up test is forced into.</p>
+</div></section>
+
+<section><div class="card">
+<h2>2 · Did it crack the saturated channels?</h2>
+<div class="tablewrap"><table><thead><tr><th>channel</th><th>true saturation</th><th>true contrib</th><th>ladder est</th><th>error</th><th>89% CI (✓=covers truth)</th></tr></thead><tbody><tr><td>paid_social</td><td>72% (saturated)</td><td>286</td><td>259</td><td>-27</td><td>✓ [217,459]</td></tr><tr><td>paid_search</td><td>72% (saturated)</td><td>194</td><td>172</td><td>-23</td><td>✓ [145,207]</td></tr><tr><td>programmatic_display</td><td>52% (mid)</td><td>129</td><td>123</td><td>-6</td><td>✓ [95,153]</td></tr><tr><td>influencer</td><td>17% (headroom)</td><td>51</td><td>36</td><td>-15</td><td>✓ [16,68]</td></tr><tr><td>dooh</td><td>30% (headroom)</td><td>61</td><td>69</td><td>+9</td><td>✓ [44,100]</td></tr><tr><td>tv_ctv</td><td>75% (saturated)</td><td>240</td><td>172</td><td>-68</td><td>✓ [95,439]</td></tr></tbody></table></div>
+<p>Ladder recovery: <b>MAE 25 conv/wk per channel</b>, 6/6 credible intervals cover
+truth. The headline: the <b>saturated</b> channels (paid_social, paid_search, tv_ctv) — the ones a
+single-cell anchor pushed to nonsense (paid_social went to ~20 vs a true 282) — are now right-sized,
+because the bracketing cells let the fit see the curvature instead of guessing it. tv_ctv stays the
+hardest: its long carryover (θ=0.75) muddies the in-campaign exposure and its lift is small, so even
+a ladder leaves it under-credited. <b>Measuring beats assuming — but saturation is still the enemy.</b></p>
+<div class="callout"><b>The design lesson.</b> A ladder only works if its cells <i>bracket</i> your
+operating point. An all-UP ladder on a saturated channel just samples the plateau — flat points that
+can't separate the ceiling from the half-saturation. You must be willing to spend <i>less</i> than
+BAU in some test markets. That is uncomfortable, and it is the price of identification.</div>
+</div></section>
+
+<section><div class="card">
+<h2>3 · What a ladder actually costs</h2>
+<p>None of the cost is the modeling. It is calendar time, scarce geo inventory, and a real media
+tax — scaled here to a ~$300M annual program (each channel's budget = its share
+of observed spend):</p>
+<div class="tablewrap"><table><thead><tr><th>channel</th><th>annual budget</th><th>test DMAs</th><th>geo feasibility</th><th>duration</th><th>media tax ($)</th><th>tax % of budget</th></tr></thead><tbody><tr><td>paid_social</td><td>$100M</td><td>240</td><td>SHORT 30 DMAs</td><td>5.1 mo</td><td>$3.96M</td><td>3.9%</td></tr><tr><td>paid_search</td><td>$51M</td><td>240</td><td>SHORT 30 DMAs</td><td>5.1 mo</td><td>$2.01M</td><td>3.9%</td></tr><tr><td>programmatic_display</td><td>$36M</td><td>240</td><td>SHORT 30 DMAs</td><td>5.1 mo</td><td>$1.41M</td><td>3.9%</td></tr><tr><td>influencer</td><td>$21M</td><td>240</td><td>SHORT 30 DMAs</td><td>5.1 mo</td><td>$0.83M</td><td>3.9%</td></tr><tr><td>dooh</td><td>$20M</td><td>240</td><td>SHORT 30 DMAs</td><td>5.1 mo</td><td>$0.79M</td><td>3.9%</td></tr><tr><td>tv_ctv</td><td>$72M</td><td>240</td><td>SHORT 30 DMAs</td><td>5.1 mo</td><td>$2.85M</td><td>3.9%</td></tr></tbody></table></div>
+<ul>
+<li><b>Calendar.</b> Each ladder = pre-period + campaign + carryover read ≈ a full quarter
+(~5 months, longer-carryover channels read slower). Cells run in parallel as separate
+market groups, so one channel's ladder is one wave — but the rotating program tests one channel per
+quarter, so laddering all six is a <b>~1.5-year</b> commitment back-to-back, longer in
+practice.</li>
+<li><b>Geo inventory.</b> A 6-cell × 40-market ladder ties up <b>240 test DMAs at once</b> — more
+than the ~210 DMAs that exist in the US. Real programs cap test geos to protect the national number,
+so cells get smaller and noisier, or you drop to sub-DMA matched markets. And the saturated channels
+— smallest lift, hardest to detect — need the <i>most</i> markets to power, exactly where geo is
+scarcest.</li>
+<li><b>Media tax.</b> The up-cells pour money into the flat part of the curve (near-zero marginal
+return) and the down-cells forgo conversions. Across the portfolio that is on the order of
+<b>$12M</b> of deliberately sub-optimal spend per ladder wave — paid to <i>learn</i>
+the curve. The payoff has to clear that bar.</li>
+</ul>
+<div class="callout warn"><b>When is a ladder worth it?</b> When a channel is large, suspected
+saturated, and a single-cell test keeps disagreeing with the model — i.e. when the decision riding
+on getting its curve right is worth more than a quarter and a few $M of test tax. For small or
+clearly-headroom channels, a single cell (or the model alone) is enough. Triangulation means
+spending the expensive experiment where it changes a decision, and nowhere else.</div>
+</div></section>
+
+</main>
+<footer class="wrap">Generated by <code>scripts/spend_ladder_report.py</code>. Curves overlay the
+sealed answer key for grading only — the pipeline never reads it.</footer>
+</body></html>

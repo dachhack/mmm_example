@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>DraftZone MMM — run tracker</title><style>
+:root{--bg:#0e1116;--panel:#161b22;--ink:#e6edf3;--muted:#9aa7b4;--line:#2a313c;--accent:#4da3ff;--good:#2ca02c;--bad:#d62728;--warn:#d9a200}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px}a{color:var(--accent)}
+header.hero{padding:54px 0 30px;border-bottom:1px solid var(--line);background:radial-gradient(1100px 360px at 50% -90px,#1b2b40 0,transparent 70%)}
+h1{font-size:2rem;margin:0 0 6px}.sub{color:var(--muted);margin:0 0 14px}
+.kicker{text-transform:uppercase;letter-spacing:2px;font-size:.72rem;color:var(--accent);font-weight:700;margin-bottom:8px}
+section{padding:34px 0;border-bottom:1px solid var(--line)}h2{font-size:1.4rem;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:600}
+.hit{color:var(--good);font-weight:700}.miss{color:var(--bad);font-weight:700}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:700}
+.pill.inc{background:rgba(44,160,44,.18);color:#69d36a}.pill.dec{background:rgba(214,39,40,.18);color:#ff6b6b}.pill.test{background:rgba(217,162,0,.18);color:#f0c64b}
+.callout{border-left:3px solid var(--accent);background:#1d2530;padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0}
+.callout.warn{border-left-color:var(--warn)}.callout.good{border-left-color:var(--good)}
+img{max-width:100%;border-radius:8px;border:1px solid var(--line);margin:8px 0}
+.metric{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0}.metric .m b{font-size:1.4rem;display:block}.metric .m span{color:var(--muted);font-size:.78rem}
+.small{font-size:.82rem;color:var(--muted)}footer{padding:36px 0 70px;color:var(--muted);font-size:.85rem}
+.tag{display:inline-block;background:#1d2530;border:1px solid var(--line);border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:.8rem}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0}table{min-width:520px}
+@media(max-width:640px){
+ .wrap{padding:0 14px}header.hero{padding:34px 0 22px}h1{font-size:1.5rem}h2{font-size:1.2rem}
+ .sub{font-size:.95rem}section{padding:24px 0}.card{padding:13px 14px}
+ th,td{padding:6px 7px;font-size:.84rem}.metric{gap:16px}.metric .m b{font-size:1.2rem}
+ body{font-size:15px}.kicker{font-size:.66rem}
+}
+</style></head><body>
+<header class="hero"><div class="wrap">
+<div class="kicker">A Skeptic's Guide to Marketing Mix Modeling</div>
+<h1>DraftZone MMM — run tracker</h1>
+<p class="sub">Each row is one synthetic dataset, modeled end-to-end and graded against a sealed answer key.</p>
+<p>We regenerate the data under different seeds and assumptions to see what survives. Every run measures
+the same things: how badly observational MMM is fooled by the spend↔season confound, how much a per-channel
+geo-experiment repairs it, whether marginal ROI is trustworthy, and what an idealized test-and-learn program
+can actually attain. <a href="../results/index.html">Results &amp; recommendations →</a>
+&nbsp;·&nbsp; <a href="../process/index.html">How it works →</a>
+&nbsp;·&nbsp; <a href="../conditional/index.html">Which engine when →</a>
+&nbsp;·&nbsp; <a href="../robustness/index.html">Multi-seed leaderboard →</a>
+&nbsp;·&nbsp; <a href="../engines/index.html">Single-seed deep dive →</a>
+&nbsp;·&nbsp; <a href="../ladder/index.html">Spend ladders →</a>
+&nbsp;·&nbsp; <a href="../index.html">Dashboard →</a></p>
+</div></header>
+<main class="wrap"><section>
+<div class="card"><div class="tablewrap"><table><thead><tr><th>run</th><th>seed</th><th>confound</th><th>baseline</th><th>saturation</th><th>MAE obs→anch</th><th>media under-credit</th><th>interval cov.</th><th>attainable lift</th><th>≈time to 90%</th><th>tests→90% smart/RR</th><th>robust move(s)</th><th>generated</th></tr></thead><tbody><tr><td><a href="seed2025/report.html">seed2025</a></td><td>2025</td><td>0.6</td><td>46%</td><td>stable</td><td>44 → 101</td><td>2% → 48%</td><td>35%</td><td>+5.8%</td><td>~26 wk</td><td>21 / 17</td><td>—</td><td>2026-06-04 18:31</td></tr><tr><td><a href="seed77/report.html">seed77</a></td><td>77</td><td>0.6</td><td>46%</td><td>stable</td><td>50 → 79</td><td>-20% → 31%</td><td>32%</td><td>+5.3%</td><td>~39 wk</td><td>19 / 17</td><td>—</td><td>2026-06-04 16:38</td></tr><tr><td><a href="extreme_headroom/report.html">extreme_headroom</a></td><td>88</td><td>0.6</td><td>59%</td><td>2.9x (headroom)</td><td>58 → 61</td><td>-77% → -87%</td><td>44%</td><td>+8.8%</td><td>~104 wk</td><td>21 / 27</td><td>paid_social decrease, influencer increase, tv_ctv decrease</td><td>2026-06-03 17:30</td></tr><tr><td><a href="high_headroom/report.html">high_headroom</a></td><td>88</td><td>0.6</td><td>53%</td><td>1.9x (headroom)</td><td>66 → 58</td><td>-44% → -44%</td><td>42%</td><td>+4.0%</td><td>~104 wk</td><td>23 / 39</td><td>paid_social decrease, influencer increase, tv_ctv decrease</td><td>2026-06-03 17:11</td></tr><tr><td><a href="seasonal_saturation/report.html">seasonal_saturation</a></td><td>77</td><td>0.6</td><td>44%</td><td>seasonal</td><td>57 → 37</td><td>-16% → -4%</td><td>35%</td><td>+6.0%</td><td>~26 wk</td><td>10 / 4</td><td>paid_social decrease, influencer increase, tv_ctv decrease</td><td>2026-06-03 16:52</td></tr><tr><td><a href="stable_saturation/report.html">stable_saturation</a></td><td>77</td><td>0.6</td><td>46%</td><td>stable</td><td>50 → 36</td><td>-20% → -10%</td><td>34%</td><td>+5.3%</td><td>~39 wk</td><td>7 / 9</td><td>paid_social decrease, influencer increase, tv_ctv decrease</td><td>2026-06-03 16:40</td></tr></tbody></table></div></div>
+<p class="small">"MAE obs→anch" = mean absolute per-channel attribution error, observational vs experiment-anchored
+(lower is better). "interval cov." is what % of weeks the nominal 89% predictive band actually covers
+(≪89% = overconfident). "attainable lift" is the max fixed-budget conversion gain under perfect test-and-learn.
+"≈time to 90%" estimates the calendar weeks to capture 90% of that gain (one experiment cycle ≈ a quarter, run
+in parallel; no-drift idealization — with drift you never fully arrive). "tests→90% smart/RR" is how many
+single-channel experiments a Value-of-Information selection policy needs vs. blind round-robin to reach 90%.</p>
+</section></main>
+<footer class="wrap">Generated by <code>scripts/make_report.py</code>.</footer>
+</body></html>

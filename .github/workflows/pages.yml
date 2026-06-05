@@ -1,6 +1,6 @@
 name: Build & Deploy Pages
 on:
-  push: { branches: [main] }
+  push: { branches: [main, claude/draftzone-mmm-skeptics-guide-NrBPj] }
   workflow_dispatch:
 permissions:
   contents: read

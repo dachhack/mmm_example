@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# scripts/run_conditional_sweep.sh — factorial sweep over a DATA CHARACTERISTIC (saturation), to
+# answer "which engine works best for which kind of data?".
+#
+# For each (saturation level x seed): regenerate the world at that saturation, fit the fast engine
+# set at best config, and snapshot the graded results tagged with the regime into
+# docs/robustness/conditional/. scripts/conditional.py then aggregates per regime into a
+# "which engine when" decision guide. Saturation is set with datagen --saturation-scale:
+#   0.5 = MORE saturated (low headroom) · 1.0 = baseline · 2.0 = LESS saturated (headroom).
+#
+# Usage: bash scripts/run_conditional_sweep.sh "0.5 1.0 2.0" "11 22 33 44" [CONFOUND]
+set -uo pipefail
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+source .venv/bin/activate
+BRANCH="claude/draftzone-mmm-skeptics-guide-NrBPj"
+SATS="$1"; SEEDS="$2"; CF="${3:-0.6}"
+say() { echo "[$(date +%H:%M:%S)] $*"; }
+mkdir -p docs/robustness/conditional artifacts
+
+for SAT in $SATS; do
+  for SEED in $SEEDS; do
+    TAG="sat${SAT}_cf${CF}_seed${SEED}"
+    SNAP="docs/robustness/conditional/run_${TAG}.json"
+    if [ -f "$SNAP" ]; then say "skip $TAG (exists)"; continue; fi   # resumable
+    say ">>> sat=$SAT cf=$CF seed=$SEED"
+    bash scripts/run_one_cell.sh "$SEED" "$SAT" "$CF" "$SNAP" >> "artifacts/cond_${TAG}.log" 2>&1
+    grep -E "MAE=" "artifacts/cond_${TAG}.log" 2>/dev/null | head -10 || true
+    git add "$SNAP" >/dev/null 2>&1
+    git commit -q -m "conditional: snapshot $TAG" >/dev/null 2>&1 && git push -q origin "$BRANCH" >/dev/null 2>&1
+    say "OK sat=$SAT cf=$CF seed=$SEED"
+  done
+done
+
+say ">>> aggregating conditional decision guide"
+python scripts/conditional.py
+git add docs/conditional docs/robustness/conditional >/dev/null 2>&1
+git commit -q -m "conditional: aggregate which-engine-when decision guide" >/dev/null 2>&1 && git push -q origin "$BRANCH" >/dev/null 2>&1
+say "=== CONDITIONAL SWEEP COMPLETE ==="

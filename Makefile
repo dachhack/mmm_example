@@ -1,5 +1,5 @@
 # DraftZone MMM — pipeline targets. See docs/INFRA.md.
-.PHONY: data fit experiments anchored evaluate figures dashboard notebooks test all clean
+.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard robustness pages conditional sweep meridian robyn robyn-real remote dashboard notebooks test all clean
 
 data:        ## generate synthetic national + geo data (+ sealed truth)
 	python -m draftzone_mmm.datagen
@@ -18,6 +18,46 @@ evaluate:    ## grade against sealed truth (ONLY step allowed to read data_seale
 
 figures:     ## export dashboard data contracts
 	python -m draftzone_mmm.export_dashboard_data --out docs/data/
+
+report:      ## publish per-run HTML report + rebuild the runs index (docs/runs/). LABEL=seed77
+	python scripts/make_report.py $(if $(LABEL),--label $(LABEL),)
+
+ladder:      ## spend-ladder demo: replica geos + multi-cell ladder -> fit curve -> publish docs/ladder/
+	python -m draftzone_mmm.datagen --seed 77 --hetero-geos --spend-ladder
+	python -m draftzone_mmm.spend_ladder
+	python scripts/spend_ladder_report.py
+
+leaderboard: ## grade every engine (incl. spend ladder) against the sealed truth -> docs/engines/
+	python scripts/engine_leaderboard.py
+
+robustness:  ## snapshot this run + aggregate robustness across seeds -> docs/robustness/
+	python scripts/snapshot_results.py
+	python scripts/robustness.py
+
+pages:       ## build the results & recommendations + process narrative pages -> docs/
+	python scripts/build_site_pages.py
+
+conditional: ## which-engine-when sweep over saturation regimes -> docs/conditional/
+	bash scripts/run_conditional_sweep.sh "0.5 1.0 2.0" "$(SEEDS)"
+
+sweep:       ## multi-seed robustness sweep (fast national engines). make sweep SEEDS="101 202 303"
+	bash scripts/run_robustness_sweep.sh $(SEEDS)
+
+robyn:       ## fit the Robyn-style engine (ridge + Nevergrad + DECOMP.RSSD). Needs nevergrad
+	python scripts/fit_robyn_style.py
+
+robyn-real:  ## fit the REAL Meta Robyn (R). First: bash scripts/robyn/setup_robyn.sh
+	RETICULATE_PYTHON=$$(which python) Rscript scripts/fit_meta_robyn.R --iterations 1000 --trials 3
+
+meridian:    ## fit Google Meridian variants (national Fourier/AKS + geo panel). Needs .[meridian]
+	python scripts/fit_meridian.py --mode national --seasonality fourier
+	python scripts/fit_meridian.py --mode national --seasonality aks
+	python scripts/fit_meridian.py --mode geo
+	python scripts/fit_meridian.py --mode geo --demand-control            # imperfect proxy (~0.78)
+	python scripts/fit_meridian.py --mode geo --demand-control demand_proxy_hi  # near-perfect (~0.98)
+
+remote:      ## run a command on a VM you control (MMM_VM_HOST=user@host CMD=...). Multi-core, no time cap
+	MMM_VM_HOST=$(MMM_VM_HOST) bash scripts/run_remote.sh "$(CMD)"
 
 dashboard:   ## build the interactive site
 	cd dashboard && npm ci && npm run build

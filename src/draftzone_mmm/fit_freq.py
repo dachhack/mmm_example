@@ -17,16 +17,23 @@ import json
 import pathlib
 
 import numpy as np
-from scipy.optimize import minimize
+from scipy.optimize import lsq_linear, minimize
 
 from .model import ADSTOCK_L, CHANNELS, build_controls, load_national, media_inputs
 from .transforms import geometric_adstock, hill_saturation
 
 # Analyst's domain-prior bounds on carryover (NOT truth).
 BOUNDS_THETA = {
-    "tv": (0.3, 0.95), "search": (0.0, 0.5), "social": (0.1, 0.8),
-    "affiliate": (0.0, 0.7), "brand": (0.2, 0.9),
+    "paid_social": (0.1, 0.8), "paid_search": (0.0, 0.4),
+    "programmatic_display": (0.1, 0.7), "influencer": (0.0, 0.6),
+    "dooh": (0.2, 0.9), "tv_ctv": (0.3, 0.95),
 }
+# Robustness: the media betas were solved by UNCONSTRAINED lstsq, so collinear Hill features let one
+# channel's beta explode (a +3000% degenerate fit on some seeds — the robustness sweep caught it).
+# We now solve them with NON-NEGATIVITY (media effects >= 0) plus a small ridge in CONTRIBUTION space
+# (penalising beta_c * mean(feature_c), i.e. each channel's average contribution magnitude — scale-
+# free, so it tames a runaway without biasing legitimate channels). Same cure as the spend-ladder fit.
+CONTRIB_RIDGE = 0.02
 
 
 def fit(df, n_starts=8, seed=0):
@@ -46,17 +53,27 @@ def fit(df, n_starts=8, seed=0):
             cols.append(hill_saturation(ad, p[c]["hs"], p[c]["slope"]))
         return np.column_stack(cols)
 
+    nch = len(CHANNELS)
+
     def fit_linear(M):
+        """Non-negative (media betas >= 0) ridge-regularised linear solve. The ridge penalises each
+        channel's average contribution magnitude, so a collinear feature can't be handed a huge beta."""
         A = np.column_stack([np.ones(T), M, Xc])
-        coef, *_ = np.linalg.lstsq(A, y, rcond=None)
-        return A, coef
+        p = A.shape[1]
+        ridge = np.sqrt(CONTRIB_RIDGE) * M.mean(0)              # one penalty row per media channel
+        aug = np.zeros((nch, p))
+        aug[np.arange(nch), 1 + np.arange(nch)] = ridge
+        Aa = np.vstack([A, aug])
+        ya = np.concatenate([y, np.zeros(nch)])
+        lo = np.full(p, -np.inf); hi = np.full(p, np.inf)
+        lo[1:1 + nch] = 0.0                                     # media effects non-negative
+        sol = lsq_linear(Aa, ya, bounds=(lo, hi), max_iter=200)
+        return A, sol.x
 
     def objective(params):
         M = build_media(unpack(params))
         A, coef = fit_linear(M)
-        resid = y - A @ coef
-        pen = np.sum(np.clip(-coef[1:1 + len(CHANNELS)], 0, None) ** 2) * 1e6  # betas >= 0
-        return float(np.sum(resid ** 2) + pen)
+        return float(np.sum((y - A @ coef) ** 2))
 
     x0 = []
     bnds = []

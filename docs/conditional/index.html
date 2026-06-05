@@ -1,0 +1,68 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Which engine when — conditional decision guide</title><style>
+:root{--bg:#0e1116;--panel:#161b22;--ink:#e6edf3;--muted:#9aa7b4;--line:#2a313c;--accent:#4da3ff;--good:#2ca02c;--bad:#d62728;--warn:#d9a200}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+.wrap{max-width:980px;margin:0 auto;padding:0 20px}a{color:var(--accent)}
+header.hero{padding:54px 0 30px;border-bottom:1px solid var(--line);background:radial-gradient(1100px 360px at 50% -90px,#1b2b40 0,transparent 70%)}
+h1{font-size:2rem;margin:0 0 6px}.sub{color:var(--muted);margin:0 0 14px}
+.kicker{text-transform:uppercase;letter-spacing:2px;font-size:.72rem;color:var(--accent);font-weight:700;margin-bottom:8px}
+section{padding:34px 0;border-bottom:1px solid var(--line)}h2{font-size:1.4rem;margin:0 0 4px}.lead{color:var(--muted);margin:0 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0}
+table{width:100%;border-collapse:collapse;font-size:.9rem}th,td{text-align:right;padding:7px 9px;border-bottom:1px solid var(--line)}
+th:first-child,td:first-child{text-align:left}th{color:var(--muted);font-weight:600}
+.hit{color:var(--good);font-weight:700}.miss{color:var(--bad);font-weight:700}
+.pill{display:inline-block;padding:2px 9px;border-radius:999px;font-size:.74rem;font-weight:700}
+.pill.inc{background:rgba(44,160,44,.18);color:#69d36a}.pill.dec{background:rgba(214,39,40,.18);color:#ff6b6b}.pill.test{background:rgba(217,162,0,.18);color:#f0c64b}
+.callout{border-left:3px solid var(--accent);background:#1d2530;padding:11px 15px;border-radius:0 8px 8px 0;margin:12px 0}
+.callout.warn{border-left-color:var(--warn)}.callout.good{border-left-color:var(--good)}
+img{max-width:100%;border-radius:8px;border:1px solid var(--line);margin:8px 0}
+.metric{display:flex;gap:24px;flex-wrap:wrap;margin:8px 0}.metric .m b{font-size:1.4rem;display:block}.metric .m span{color:var(--muted);font-size:.78rem}
+.small{font-size:.82rem;color:var(--muted)}footer{padding:36px 0 70px;color:var(--muted);font-size:.85rem}
+.tag{display:inline-block;background:#1d2530;border:1px solid var(--line);border-radius:6px;padding:2px 8px;margin:2px 4px 2px 0;font-size:.8rem}
+.tablewrap{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px 0}table{min-width:520px}
+@media(max-width:640px){
+ .wrap{padding:0 14px}header.hero{padding:34px 0 22px}h1{font-size:1.5rem}h2{font-size:1.2rem}
+ .sub{font-size:.95rem}section{padding:24px 0}.card{padding:13px 14px}
+ th,td{padding:6px 7px;font-size:.84rem}.metric{gap:16px}.metric .m b{font-size:1.2rem}
+ body{font-size:15px}.kicker{font-size:.66rem}
+}
+</style></head><body>
+<header class="hero"><div class="wrap">
+<div class="kicker">A Skeptic's Guide to Marketing Mix Modeling</div>
+<h1>Which engine when?</h1>
+<p class="sub">Does the best MMM depend on your data? A factorial sweep over channel <b>saturation</b>
+× spend↔demand <b>confound</b> (3×2 regimes, 30 graded datasets,
+5 seeds). <a href="../robustness/index.html">← multi-seed leaderboard</a> ·
+<a href="../results/index.html">results</a> · <a href="../process/index.html">how it works</a></p>
+<p>The multi-seed leaderboard says no engine is best <i>on average</i>. This page asks the sharper
+question — best <i>for a given kind of data</i> — by holding everything fixed and varying two data
+characteristics, then re-ranking the engines in each regime.</p>
+</div></header>
+<main class="wrap">
+<section><div class="card">
+<h2>Decision grid — most reliable engine by regime</h2>
+<div class="tablewrap"><table><thead><tr><th>saturation \ confound</th><th>Strong confound (~0.6)</th><th>Weak confound (~0.3)</th></tr></thead><tbody><tr><td>High saturation</td><td>Meridian Fourier <span class='small'>(1.6)</span></td><td>Meridian Fourier <span class='small'>(1.6)</span></td></tr><tr><td>Medium saturation</td><td>Meridian AKS <span class='small'>(2.2)</span></td><td>Meridian Fourier <span class='small'>(2.6)</span></td></tr><tr><td>Low saturation (headroom)</td><td>Spend ladder <span class='small'>(2.6)</span></td><td>Robyn-style <span class='small'>(1.8)</span></td></tr></tbody></table></div>
+<p class="small">Best <b>average rank</b> (shown in parentheses) within each saturation×confound cell.
+Read it as a lookup: your data's regime → the engine that was most reliable there. With a handful of
+seeds per cell this is <b>directional</b>; "—" = not yet run.</p>
+<p><b>Yes — the best engine depends on the data.</b> Saturation alone reorders the field: <b>Meridian Fourier</b> goes from rank 1.6 when channels are saturated to 6.2 with headroom. The 2D grid above turns that into a lookup: find your saturation row and confound column.</p>
+<p><b>The confound axis changes who you can trust.</b> Averaged over saturation, the observational Bayesian fit ranks 4.2 under a strong confound vs 3.9 under a weak one, while the experiment-anchored fit ranks 5.2 vs 5.9. When the confound is weak, the observational fit is relatively safer and the experiment anchor earns less; when it is strong, the case for an experiment grows — exactly the triangulation logic, now measured.</p>
+<p><b>What never changes:</b> naive and (un-saturated) frequentist regression win no cell; regularisation and seasonality control are required in every regime; and where the confound is high, no single observational fit substitutes for a randomized experiment.</p>
+</div></section>
+<section><div class="card"><h2>Strong confound (~0.6) — engine rank by saturation</h2><div class="tablewrap"><table><thead><tr><th>engine</th><th>High saturation</th><th>Medium saturation</th><th>Low saturation (headroom)</th></tr></thead><tbody><tr><td>Meridian AKS</td><td>3.4 (92)</td><td>2.2 (45)</td><td>3.6 (38)</td></tr><tr><td>Robyn-style</td><td>4.6 (108)</td><td>2.8 (57)</td><td>3.0 (35)</td></tr><tr><td>Spend ladder</td><td>3.8 (100)</td><td>4.6 (63)</td><td>2.6 (42)</td></tr><tr><td>Meridian Fourier</td><td>1.6 (69)</td><td>3.4 (42)</td><td>6.2 (63)</td></tr><tr><td>PyMC obs</td><td>3.2 (83)</td><td>5.2 (62)</td><td>4.2 (53)</td></tr><tr><td>PyMC anchored</td><td>7.2 (130)</td><td>5.2 (82)</td><td>3.2 (46)</td></tr><tr><td>Naive OLS</td><td>5.0 (112)</td><td>5.4 (69)</td><td>6.8 (68)</td></tr><tr><td>Frequentist NLS</td><td>7.2 (166)</td><td>7.2 (128)</td><td>6.4 (61)</td></tr></tbody></table></div><p class='small'>avg rank (median MAE) within the regime; lower rank is better. MAE is not comparable across saturation columns (contributions shrink with headroom) — compare ranks.</p></div></section><section><div class="card"><h2>Weak confound (~0.3) — engine rank by saturation</h2><div class="tablewrap"><table><thead><tr><th>engine</th><th>High saturation</th><th>Medium saturation</th><th>Low saturation (headroom)</th></tr></thead><tbody><tr><td>Meridian AKS</td><td>4.0 (106)</td><td>3.2 (53)</td><td>3.2 (34)</td></tr><tr><td>Spend ladder</td><td>2.6 (99)</td><td>4.8 (63)</td><td>3.2 (42)</td></tr><tr><td>Meridian Fourier</td><td>1.6 (76)</td><td>2.6 (39)</td><td>6.6 (62)</td></tr><tr><td>Robyn-style</td><td>6.8 (167)</td><td>3.0 (47)</td><td>1.8 (31)</td></tr><tr><td>PyMC obs</td><td>2.6 (88)</td><td>4.4 (60)</td><td>4.8 (50)</td></tr><tr><td>Naive OLS</td><td>5.6 (128)</td><td>4.8 (74)</td><td>4.8 (49)</td></tr><tr><td>PyMC anchored</td><td>6.8 (128)</td><td>6.8 (88)</td><td>4.2 (38)</td></tr><tr><td>Frequentist NLS</td><td>6.0 (187)</td><td>6.4 (218)</td><td>7.4 (63)</td></tr></tbody></table></div><p class='small'>avg rank (median MAE) within the regime; lower rank is better. MAE is not comparable across saturation columns (contributions shrink with headroom) — compare ranks.</p></div></section>
+<section><div class="card">
+<h2>What holds regardless of regime</h2>
+<ul>
+<li><b>Regularise</b> — the un-regularised engines are the ones that diverge, in every regime.</li>
+<li><b>Control seasonality</b> and measure your confound.</li>
+<li><b>Experiments beat confounding</b> — but conditionally: a lift test is clean on a near-linear
+channel and small/noisy on a saturated one, so the experiment anchor helps with headroom and hurts
+when saturated, and matters more as the confound rises.</li>
+<li><b>Naive and frequentist regression never win a cell</b> — no regime here makes the un-regularised
+or un-saturated baselines the right tool.</li>
+</ul>
+</div></section>
+</main>
+<footer class="wrap">Generated by <code>scripts/conditional.py</code> from the conditional sweep.</footer>
+</body></html>

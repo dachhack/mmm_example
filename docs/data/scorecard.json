@@ -1,138 +1,160 @@
 {
   "fit": {
-    "r2": 0.768061833441672,
-    "mape": 4.627756414155596,
+    "r2": 0.7987120133439706,
+    "mape": 4.130037319078342,
     "pp_interval_nominal": 89.0,
-    "pp_interval_coverage": 34.6
+    "pp_interval_coverage": 35.3
   },
   "channels": [
     {
-      "channel": "tv",
-      "true_contrib": 378.4055168298192,
-      "est_contrib": 273.06359089860524,
+      "channel": "paid_social",
+      "true_contrib": 286.17818517801203,
+      "est_contrib": 52.10954462429436,
       "ci": [
-        102.27486724225592,
-        444.6219866280234
+        1.4497662432799008,
+        195.21757331407252
       ],
-      "hit": true,
-      "true_theta": 0.75,
-      "est_theta": 0.7309930055084872,
+      "hit": false,
+      "true_theta": 0.45,
+      "est_theta": 0.44090326729959384,
       "theta_ci": [
-        0.553718803021486,
-        0.8938686971156313
+        0.1702136528134496,
+        0.7284265719981714
       ],
       "theta_hit": true
     },
     {
-      "channel": "search",
-      "true_contrib": 235.79256255899824,
-      "est_contrib": 245.05704431407176,
+      "channel": "paid_search",
+      "true_contrib": 194.18196853649386,
+      "est_contrib": 96.18305056562382,
       "ci": [
-        141.45698448786518,
-        382.1419836796886
+        3.269481153811009,
+        306.07584472077303
       ],
       "hit": true,
       "true_theta": 0.1,
-      "est_theta": 0.23374778658040432,
+      "est_theta": 0.1266792170254903,
       "theta_ci": [
-        0.05432414300751986,
-        0.45070275769552315
+        0.015326372374884021,
+        0.31568529135375106
       ],
       "theta_hit": true
     },
     {
-      "channel": "social",
-      "true_contrib": 301.2647348860372,
-      "est_contrib": 220.670521230276,
+      "channel": "programmatic_display",
+      "true_contrib": 128.95877055384736,
+      "est_contrib": 69.47297334349517,
       "ci": [
-        101.22306754546987,
-        380.7971853257434
+        2.2409376008060455,
+        285.52561505597686
       ],
       "hit": true,
-      "true_theta": 0.4,
-      "est_theta": 0.46033546730640673,
+      "true_theta": 0.35,
+      "est_theta": 0.3728774322892687,
       "theta_ci": [
-        0.21395790242094748,
-        0.7185882647637962
+        0.118971513773959,
+        0.6725786986701987
       ],
       "theta_hit": true
     },
     {
-      "channel": "affiliate",
-      "true_contrib": 137.35177040704968,
-      "est_contrib": 197.05618608177326,
+      "channel": "influencer",
+      "true_contrib": 50.61532573767089,
+      "est_contrib": 59.826839328578124,
       "ci": [
-        102.10755604729586,
-        320.28322334774646
+        5.389214631524339,
+        223.4553437919086
       ],
       "hit": true,
-      "true_theta": 0.3,
-      "est_theta": 0.4170482193326396,
+      "true_theta": 0.25,
+      "est_theta": 0.2598693836529146,
       "theta_ci": [
-        0.22782315517378557,
-        0.6250777269781191
+        0.058265723489944826,
+        0.5201772001044533
       ],
       "theta_hit": true
     },
     {
-      "channel": "brand",
-      "true_contrib": 81.90386124767525,
-      "est_contrib": 75.91115422078953,
+      "channel": "dooh",
+      "true_contrib": 60.6826464738795,
+      "est_contrib": 125.05183333009907,
       "ci": [
-        28.272551929699503,
-        140.26552573508553
+        6.486841231142343,
+        366.0856992565348
       ],
       "hit": true,
       "true_theta": 0.6,
-      "est_theta": 0.5488765573749678,
+      "est_theta": 0.6053911499256825,
       "theta_ci": [
-        0.27908947525191874,
-        0.825711844786515
+        0.3212645181579798,
+        0.854004548206859
+      ],
+      "theta_hit": true
+    },
+    {
+      "channel": "tv_ctv",
+      "true_contrib": 239.6416799053114,
+      "est_contrib": 96.14273877408466,
+      "ci": [
+        3.2966477406793793,
+        334.49173530723215
+      ],
+      "hit": true,
+      "true_theta": 0.75,
+      "est_theta": 0.7469357350333994,
+      "theta_ci": [
+        0.4942885370909015,
+        0.9412888196658578
       ],
       "theta_hit": true
     }
   ],
   "summary": {
-    "n_channels": 5,
+    "n_channels": 6,
     "contrib_ci_hits": 5,
-    "theta_hits": 5,
-    "media_total_true": 1134.7,
-    "media_total_est": 1011.8,
-    "media_under_credit_pct": 10.8,
+    "theta_hits": 6,
+    "media_total_true": 960.3,
+    "media_total_est": 498.8,
+    "media_under_credit_pct": 48.1,
     "overconfident": true
   },
   "nonmedia": {
     "true": 1664.0,
-    "est": 1777.2
+    "est": 2108.1
   },
   "naive": {
-    "r2": 0.622,
-    "intercept": 1964.0,
+    "r2": 0.649,
+    "intercept": 1568.0,
     "channels": [
       {
-        "channel": "tv",
-        "true_contrib": 378.4055168298192,
-        "naive_contrib": 34.4
+        "channel": "paid_social",
+        "true_contrib": 286.17818517801203,
+        "naive_contrib": 166.1
       },
       {
-        "channel": "search",
-        "true_contrib": 235.79256255899824,
-        "naive_contrib": 231.5
+        "channel": "paid_search",
+        "true_contrib": 194.18196853649386,
+        "naive_contrib": 196.8
       },
       {
-        "channel": "social",
-        "true_contrib": 301.2647348860372,
-        "naive_contrib": 115.6
+        "channel": "programmatic_display",
+        "true_contrib": 128.95877055384736,
+        "naive_contrib": 141.3
       },
       {
-        "channel": "affiliate",
-        "true_contrib": 137.35177040704968,
-        "naive_contrib": 58.5
+        "channel": "influencer",
+        "true_contrib": 50.61532573767089,
+        "naive_contrib": 83.5
       },
       {
-        "channel": "brand",
-        "true_contrib": 81.90386124767525,
-        "naive_contrib": 109.6
+        "channel": "dooh",
+        "true_contrib": 60.6826464738795,
+        "naive_contrib": 78.8
+      },
+      {
+        "channel": "tv_ctv",
+        "true_contrib": 239.6416799053114,
+        "naive_contrib": 73.9
       }
     ]
   },

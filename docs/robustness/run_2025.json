@@ -1,0 +1,156 @@
+{
+  "seed": 2025,
+  "national_media_total": 960.2585763852151,
+  "confound": 0.5976166740495293,
+  "engines": {
+    "naive_ols": {
+      "label": "Naive OLS",
+      "world": "national",
+      "mae": 58.64231772702715,
+      "bias": -22.881882799259035,
+      "hits": 0,
+      "n_ci": 0,
+      "r2": 0.6491110896218524,
+      "diverged": false,
+      "sampling": null
+    },
+    "frequentist_nls": {
+      "label": "Frequentist NLS",
+      "world": "national",
+      "mae": 115.3471193398329,
+      "bias": 27.80363624419635,
+      "hits": 0,
+      "n_ci": 0,
+      "r2": 0.859702209013353,
+      "diverged": false,
+      "sampling": null
+    },
+    "pymc_obs": {
+      "label": "DraftZone PyMC (obs)",
+      "world": "national",
+      "mae": 44.14324672131959,
+      "bias": -1.528556390163438,
+      "hits": 6,
+      "n_ci": 6,
+      "r2": 0.8230293404952586,
+      "diverged": false,
+      "sampling": {
+        "ess_bulk_min": 592.2402875175925,
+        "rhat_max": 1.0009579217029934
+      }
+    },
+    "pymc_anchored": {
+      "label": "DraftZone PyMC (anchored)",
+      "world": "national",
+      "mae": 101.4388328855489,
+      "bias": -48.0570137843702,
+      "hits": 5,
+      "n_ci": 6,
+      "r2": 0.7987120133439706,
+      "diverged": false,
+      "sampling": {
+        "ess_bulk_min": 230.15012843636313,
+        "rhat_max": 1.0132008102355712
+      }
+    },
+    "google_meridian": {
+      "label": "Google Meridian (national, Fourier)",
+      "world": "national",
+      "mae": 24.23394668986627,
+      "bias": -11.876089298565773,
+      "hits": 6,
+      "n_ci": 6,
+      "r2": 0.8211414813995361,
+      "diverged": false,
+      "sampling": null
+    },
+    "google_meridian_aks": {
+      "label": "Meridian (national, AKS)",
+      "world": "national",
+      "mae": 47.233796449481645,
+      "bias": -25.803071243900668,
+      "hits": 6,
+      "n_ci": 6,
+      "r2": 0.8987300992012024,
+      "diverged": false,
+      "sampling": null
+    },
+    "google_meridian_geo": {
+      "label": "Meridian (geo panel)",
+      "world": "geo",
+      "mae": 163.88143351644734,
+      "bias": 122.91135433731655,
+      "hits": 0,
+      "n_ci": 6,
+      "r2": 0.9356282353401184,
+      "diverged": false,
+      "sampling": null
+    },
+    "google_meridian_geo_ctrl": {
+      "label": "Meridian (geo + proxy control, 0.78)",
+      "world": "geo",
+      "mae": 152.6331529341824,
+      "bias": 114.47512473725281,
+      "hits": 0,
+      "n_ci": 6,
+      "r2": 0.9410616755485535,
+      "diverged": false,
+      "sampling": null
+    },
+    "google_meridian_geo_ctrlhi": {
+      "label": "Meridian (geo + proxy control, 0.98)",
+      "world": "geo",
+      "mae": 90.5519000128416,
+      "bias": 67.91407928024147,
+      "hits": 1,
+      "n_ci": 6,
+      "r2": 0.9627304077148438,
+      "diverged": false,
+      "sampling": null
+    },
+    "spend_ladder": {
+      "label": "Spend ladder (curve fit)",
+      "world": "national",
+      "mae": 24.553347503501055,
+      "bias": -13.521533819171673,
+      "hits": 6,
+      "n_ci": 6,
+      "r2": null,
+      "diverged": false,
+      "sampling": null
+    },
+    "robyn_style": {
+      "label": "Robyn-style (Python reimpl.)",
+      "world": "national",
+      "mae": 83.1199375466502,
+      "bias": -51.935971991760276,
+      "hits": 0,
+      "n_ci": 0,
+      "r2": 0.8439160212109477,
+      "diverged": false,
+      "sampling": null
+    },
+    "meta_robyn": {
+      "label": "Meta Robyn (R 3.12.1)",
+      "world": "national",
+      "mae": 102.35066273086916,
+      "bias": -63.95193872643555,
+      "hits": 0,
+      "n_ci": 0,
+      "r2": 0.8309,
+      "diverged": false,
+      "sampling": null
+    },
+    "meta_robyn_calibrated": {
+      "label": "Meta Robyn (experiment-calibrated)",
+      "world": "national",
+      "mae": 94.85974606420251,
+      "bias": -59.271376521077045,
+      "hits": 0,
+      "n_ci": 0,
+      "r2": 0.8329,
+      "diverged": false,
+      "sampling": null
+    }
+  }
+}

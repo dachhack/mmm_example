@@ -8,54 +8,66 @@
     "comp_coef": -2.2,
     "holiday_effect": 90.0,
     "target_corr_spend_season": 0.6,
-    "realized_corr_totalspend_season": 0.602040745176445,
-    "season_scale": 0.84375
+    "realized_corr_totalspend_season": 0.5976166740495293,
+    "season_scale": 0.40625,
+    "seasonal_saturation": false,
+    "sat_seasonal_amp": 0.0,
+    "season_norm": null
   },
   "channels": {
-    "tv": {
-      "theta": 0.75,
-      "half_sat": 160000.0,
-      "slope": 1.6,
-      "beta": 420.0,
-      "imp_per_dollar": 9.0,
-      "mean_spend": 31400.386471701917,
-      "mean_contrib": 378.4055168298192
+    "paid_social": {
+      "theta": 0.45,
+      "half_sat": 900000.0,
+      "slope": 1.5,
+      "beta": 400.0,
+      "imp_per_dollar": 30.0,
+      "mean_spend": 44749.99812224973,
+      "mean_contrib": 286.17818517801203
     },
-    "search": {
+    "paid_search": {
       "theta": 0.1,
-      "half_sat": 120000.0,
+      "half_sat": 240000.0,
+      "slope": 2.2,
+      "beta": 270.0,
+      "imp_per_dollar": 22.0,
+      "mean_spend": 22690.523484799833,
+      "mean_contrib": 194.18196853649386
+    },
+    "programmatic_display": {
+      "theta": 0.35,
+      "half_sat": 430000.0,
+      "slope": 1.6,
+      "beta": 250.0,
+      "imp_per_dollar": 25.0,
+      "mean_spend": 15927.515326754889,
+      "mean_contrib": 128.95877055384736
+    },
+    "influencer": {
+      "theta": 0.25,
+      "half_sat": 175000.0,
       "slope": 2.0,
       "beta": 300.0,
-      "imp_per_dollar": 22.0,
-      "mean_spend": 15892.808564848154,
-      "mean_contrib": 235.79256255899824
+      "imp_per_dollar": 8.0,
+      "mean_spend": 9416.945392827574,
+      "mean_contrib": 50.61532573767089
     },
-    "social": {
-      "theta": 0.4,
-      "half_sat": 260000.0,
-      "slope": 1.5,
-      "beta": 350.0,
-      "imp_per_dollar": 30.0,
-      "mean_spend": 26055.621636315584,
-      "mean_contrib": 301.2647348860372
-    },
-    "affiliate": {
-      "theta": 0.3,
-      "half_sat": 45000.0,
-      "slope": 2.4,
-      "beta": 180.0,
-      "imp_per_dollar": 15.0,
-      "mean_spend": 7157.664724160649,
-      "mean_contrib": 137.35177040704968
-    },
-    "brand": {
+    "dooh": {
       "theta": 0.6,
-      "half_sat": 70000.0,
+      "half_sat": 1250000.0,
       "slope": 1.3,
-      "beta": 120.0,
-      "imp_per_dollar": 12.0,
-      "mean_spend": 5863.782213123337,
-      "mean_contrib": 81.90386124767525
+      "beta": 200.0,
+      "imp_per_dollar": 40.0,
+      "mean_spend": 8917.508984608203,
+      "mean_contrib": 60.6826464738795
+    },
+    "tv_ctv": {
+      "theta": 0.75,
+      "half_sat": 380000.0,
+      "slope": 1.6,
+      "beta": 320.0,
+      "imp_per_dollar": 9.0,
+      "mean_spend": 32271.940450621423,
+      "mean_contrib": 239.6416799053114
     }
   },
   "avg_contribution_decomposition": {
@@ -64,64 +76,371 @@
     "seasonality": 186.53846153846158,
     "promo": 11.538461538461538,
     "price": -49.23076923076923,
-    "competitor": -1.1113617149068234e-14,
+    "competitor": -1.6397140056002313e-15,
     "holiday": 5.1923076923076925,
-    "media_tv": 378.4055168298192,
-    "media_search": 235.79256255899824,
-    "media_social": 301.2647348860372,
-    "media_affiliate": 137.35177040704968,
-    "media_brand": 81.90386124767525
+    "media_paid_social": 286.17818517801203,
+    "media_paid_search": 194.18196853649386,
+    "media_programmatic_display": 128.95877055384736,
+    "media_influencer": 50.61532573767089,
+    "media_dooh": 60.6826464738795,
+    "media_tv_ctv": 239.6416799053114
   },
   "experiments": {
-    "tv": {
-      "quarter": "2025-Q1",
-      "true_increment_per_market_week": 65.2731264969382,
-      "increment_impr": 40000.0,
-      "n_markets": 80,
-      "T_exp": 20,
-      "pre_period": 6,
-      "camp_end": 18,
-      "market_adstock_over_halfsat": 0.6659273714787846
-    },
-    "search": {
-      "quarter": "2024-Q2",
-      "true_increment_per_market_week": 69.55787347919996,
-      "increment_impr": 30000.0,
-      "n_markets": 80,
-      "T_exp": 20,
-      "pre_period": 6,
-      "camp_end": 18,
-      "market_adstock_over_halfsat": 0.8548247771936026
-    },
-    "social": {
+    "paid_social": {
       "quarter": "2024-Q1",
-      "true_increment_per_market_week": 60.951694745966,
-      "increment_impr": 30000.0,
+      "true_increment_per_market_week": 2.7047483022542465,
+      "increment_impr": 41744.33853550626,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 0.8731438920337157
+      "market_adstock_over_halfsat": 1.977210450705123,
+      "market_saturation_mean": 0.7316334684343302,
+      "market_saturation_sd": 0.03685753841614485
     },
-    "affiliate": {
+    "paid_search": {
+      "quarter": "2024-Q2",
+      "true_increment_per_market_week": 2.21713268301751,
+      "increment_impr": 15788.308720853998,
+      "n_markets": 80,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "market_adstock_over_halfsat": 1.7729366936216298,
+      "market_saturation_mean": 0.7726629903811842,
+      "market_saturation_sd": 0.049558011934116415
+    },
+    "programmatic_display": {
       "quarter": "2024-Q3",
-      "true_increment_per_market_week": 50.6200178330454,
-      "increment_impr": 22000.0,
+      "true_increment_per_market_week": 2.9971013249997807,
+      "increment_impr": 13805.693078450073,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 0.8827601010789935
+      "market_adstock_over_halfsat": 1.0683084315369016,
+      "market_saturation_mean": 0.5226726170245304,
+      "market_saturation_sd": 0.054701728071897666
     },
-    "brand": {
+    "influencer": {
       "quarter": "2024-Q4",
-      "true_increment_per_market_week": 18.664806715344902,
-      "increment_impr": 20000.0,
+      "true_increment_per_market_week": 3.317269091930035,
+      "increment_impr": 2360.406717361818,
       "n_markets": 80,
       "T_exp": 20,
       "pre_period": 6,
       "camp_end": 18,
-      "market_adstock_over_halfsat": 0.7864582137439509
+      "market_adstock_over_halfsat": 0.4352425465048766,
+      "market_saturation_mean": 0.1599168473275059,
+      "market_saturation_sd": 0.03119064689345917
+    },
+    "dooh": {
+      "quarter": "2025-Q1",
+      "true_increment_per_market_week": 1.8112198492166995,
+      "increment_impr": 12267.674859892948,
+      "n_markets": 80,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "market_adstock_over_halfsat": 0.5225976708615713,
+      "market_saturation_mean": 0.2997165787267182,
+      "market_saturation_sd": 0.03479676287365587
+    },
+    "tv_ctv": {
+      "quarter": "2025-Q2",
+      "true_increment_per_market_week": 1.894370636974066,
+      "increment_impr": 8943.121940184497,
+      "n_markets": 80,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "market_adstock_over_halfsat": 1.8992697722811809,
+      "market_saturation_mean": 0.7323561022472285,
+      "market_saturation_sd": 0.03977867115989547
     }
+  },
+  "spend_ladder": {
+    "paid_social": {
+      "quarter": "2024-Q1",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -12.81826877585344
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -5.238638712079873
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 2.996103119336773
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 4.484428462467587
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 5.41714545554468
+        }
+      ],
+      "true_national_avg_contrib": 286.17818517801203
+    },
+    "paid_search": {
+      "quarter": "2024-Q2",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -11.493871411464527
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -5.607880234564082
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 2.479638919016463
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 3.304310186329611
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 3.652056818221764
+        }
+      ],
+      "true_national_avg_contrib": 194.18196853649386
+    },
+    "programmatic_display": {
+      "quarter": "2024-Q3",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -6.859571917769961
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -3.6859076619333746
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 2.954519695756391
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 4.685267795081065
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 5.838759665745709
+        }
+      ],
+      "true_national_avg_contrib": 128.95877055384736
+    },
+    "influencer": {
+      "quarter": "2024-Q4",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -2.671114141244637
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -1.9491719843069115
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 3.5770255784830467
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 7.493064210619725
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 11.23343791735344
+        }
+      ],
+      "true_national_avg_contrib": 50.61532573767089
+    },
+    "dooh": {
+      "quarter": "2025-Q1",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -2.8646710380642637
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -1.6251678001835452
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 1.8416756846041062
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 3.454722308597352
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 5.046409454963776
+        }
+      ],
+      "true_national_avg_contrib": 60.6826464738795
+    },
+    "tv_ctv": {
+      "quarter": "2025-Q2",
+      "n_cells": 6,
+      "per_cell": 40,
+      "levels": [
+        -0.85,
+        -0.5,
+        0.0,
+        0.75,
+        1.75,
+        3.5
+      ],
+      "size_frac": 0.06,
+      "T_exp": 20,
+      "pre_period": 6,
+      "camp_end": 18,
+      "cells": [
+        {
+          "level_mult": -0.85,
+          "true_lift_per_market_week": -8.30474923311367
+        },
+        {
+          "level_mult": -0.5,
+          "true_lift_per_market_week": -3.375164785034332
+        },
+        {
+          "level_mult": 0.0,
+          "true_lift_per_market_week": 0.0
+        },
+        {
+          "level_mult": 0.75,
+          "true_lift_per_market_week": 1.9991247722108998
+        },
+        {
+          "level_mult": 1.75,
+          "true_lift_per_market_week": 3.042808868048629
+        },
+        {
+          "level_mult": 3.5,
+          "true_lift_per_market_week": 3.7340829248854157
+        }
+      ],
+      "true_national_avg_contrib": 239.6416799053114
+    }
+  },
+  "geo_panel": {
+    "n_geos": 50,
+    "idio_sigma": 0.3,
+    "confound": 1.0,
+    "noise_frac": 0.18,
+    "realized_corr_spend_demand": 0.7807441140103912,
+    "demand_proxy_fidelity": 0.7861065185183823,
+    "demand_proxy_hi_fidelity": 0.9770315054209018,
+    "avg_contribution_decomposition": {
+      "paid_social": 239.9199642462265,
+      "paid_search": 141.53329912285304,
+      "programmatic_display": 103.84663945220221,
+      "influencer": 47.27774171476619,
+      "dooh": 54.48108238880466,
+      "tv_ctv": 212.93945583062987
+    },
+    "note": "Geo-world truth: summed-across-geos avg weekly contribution per channel. Slightly below the national truth by the Hill aggregation (Jensen) gap."
   }
 }
