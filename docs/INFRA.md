@@ -57,3 +57,31 @@ engines against the same sealed truth. Two are external:
   `bash scripts/robyn/setup_robyn.sh && RETICULATE_PYTHON=$(which python) Rscript scripts/fit_meta_robyn.R`.
 - **Robyn-style** (`scripts/fit_robyn_style.py`, `make robyn`): a pure-Python reimplementation of
   Robyn's method (ridge + Nevergrad + DECOMP.RSSD) for environments without R.
+
+## Compute paths — running the heavy sweeps OFF the web sandbox
+The web container is ephemeral (reclaimed on inactivity) and runs PyMC at `cores=1` with no BLAS, so
+multi-hour sweeps are slow and fragile there. Two better targets:
+
+### CI (GitHub Actions) — parallel, self-contained
+`.github/workflows/sweep.yml` (manual: Actions ▸ "MMM sweep (parallel compute)" ▸ Run workflow).
+Each (saturation × confound × seed) **cell is independent**, so the workflow fans them out as a
+matrix — an N-cell sweep finishes in ~one cell's wall-clock instead of N× sequential. Flow:
+- `setup` builds the matrix from the dispatch inputs (`scripts/ci_matrix.py`).
+- `cell` (matrix, ≤20 parallel) installs `.[fit,meridian]` and runs `scripts/run_one_cell.sh`
+  (datagen → PyMC obs+anchored → spend ladder → Robyn-style → Meridian Fourier+AKS → snapshot),
+  uploading the graded snapshot as an artifact. PyMC samples `cores=1` (Actions segfaults on
+  multi-core compiled pytensor — see CLAUDE.md), but each cell is its own runner so wall-clock is fine.
+- `aggregate` downloads all snapshots, rebuilds `docs/conditional/` + `docs/robustness/`, and commits
+  once (artifacts → single commit, so no parallel-git races).
+
+### VM — multi-core, no time limit, and the home of the real R Robyn
+`scripts/run_remote.sh` syncs the repo to a host you control, runs a command in a venv (PyMC can use
+all cores there), and pulls `docs/` back:
+```
+MMM_VM_HOST=ubuntu@HOST bash scripts/run_remote.sh 'make all'
+MMM_VM_HOST=ubuntu@HOST bash scripts/run_remote.sh \
+  'bash scripts/run_conditional_sweep.sh "0.5 1.0 2.0" "11 22 33 44 55" 0.6'
+```
+The single-cell unit (`scripts/run_one_cell.sh`) is shared by the local sweep, the VM, and CI, so a
+cell is defined in exactly one place. Design-for-interruption still applies: every sweep is
+checkpoint-committed and skip-existing/resumable.

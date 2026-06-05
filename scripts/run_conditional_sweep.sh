@@ -22,21 +22,10 @@ for SAT in $SATS; do
     TAG="sat${SAT}_cf${CF}_seed${SEED}"
     SNAP="docs/robustness/conditional/run_${TAG}.json"
     if [ -f "$SNAP" ]; then say "skip $TAG (exists)"; continue; fi   # resumable
-    LOG="artifacts/cond_${TAG}.log"
     say ">>> sat=$SAT cf=$CF seed=$SEED"
-    rm -f artifacts/*.json artifacts/*.nc artifacts/*.pkl artifacts/*.rds
-    run() { if timeout 1200 "$@" >>"$LOG" 2>&1; then :; else say "  FAIL: $* (rc=$?)"; fi; }
-    run python -m draftzone_mmm.datagen --seed "$SEED" --hetero-geos --spend-ladder --geo-panel --saturation-scale "$SAT" --confound "$CF"
-    run python -m draftzone_mmm.fit_bayes --out artifacts/idata.nc
-    run python -m draftzone_mmm.experiment --all-channels --out artifacts/anchors.json
-    run python -m draftzone_mmm.fit_bayes --anchors artifacts/anchors.json --out artifacts/idata_anchored.nc
-    run python -m draftzone_mmm.spend_ladder
-    run python scripts/fit_robyn_style.py
-    run python scripts/fit_meridian.py --mode national --seasonality fourier
-    run python scripts/fit_meridian.py --mode national --seasonality aks
-    python scripts/snapshot_results.py --out "docs/robustness/conditional/run_${TAG}.json" \
-      2>&1 | tee -a "$LOG" | grep -E "Snapshot|MAE=" | head -10
-    git add "docs/robustness/conditional/run_${TAG}.json" >/dev/null 2>&1
+    bash scripts/run_one_cell.sh "$SEED" "$SAT" "$CF" "$SNAP" >> "artifacts/cond_${TAG}.log" 2>&1
+    grep -E "MAE=" "artifacts/cond_${TAG}.log" 2>/dev/null | head -10 || true
+    git add "$SNAP" >/dev/null 2>&1
     git commit -q -m "conditional: snapshot $TAG" >/dev/null 2>&1 && git push -q origin "$BRANCH" >/dev/null 2>&1
     say "OK sat=$SAT cf=$CF seed=$SEED"
   done

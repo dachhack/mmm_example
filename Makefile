@@ -1,5 +1,5 @@
 # DraftZone MMM — pipeline targets. See docs/INFRA.md.
-.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard robustness pages conditional sweep meridian robyn robyn-real dashboard notebooks test all clean
+.PHONY: data fit experiments anchored evaluate figures report ladder leaderboard robustness pages conditional sweep meridian robyn robyn-real remote dashboard notebooks test all clean
 
 data:        ## generate synthetic national + geo data (+ sealed truth)
 	python -m draftzone_mmm.datagen
@@ -55,6 +55,9 @@ meridian:    ## fit Google Meridian variants (national Fourier/AKS + geo panel).
 	python scripts/fit_meridian.py --mode geo
 	python scripts/fit_meridian.py --mode geo --demand-control            # imperfect proxy (~0.78)
 	python scripts/fit_meridian.py --mode geo --demand-control demand_proxy_hi  # near-perfect (~0.98)
+
+remote:      ## run a command on a VM you control (MMM_VM_HOST=user@host CMD=...). Multi-core, no time cap
+	MMM_VM_HOST=$(MMM_VM_HOST) bash scripts/run_remote.sh "$(CMD)"
 
 dashboard:   ## build the interactive site
 	cd dashboard && npm ci && npm run build
