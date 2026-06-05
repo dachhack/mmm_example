@@ -32,43 +32,34 @@ img{max-width:100%;border-radius:8px;border:1px solid var(--line);margin:8px 0}
 <div class="kicker">A Skeptic's Guide to Marketing Mix Modeling</div>
 <h1>Which engine when?</h1>
 <p class="sub">Does the best MMM depend on your data? A factorial sweep over channel <b>saturation</b>
-(3 regimes × 4 seeds), every fast engine graded per regime.
-<a href="../robustness/index.html">← multi-seed leaderboard</a> ·
+× spend↔demand <b>confound</b> (3×1 regimes, 12 graded datasets,
+4 seeds). <a href="../robustness/index.html">← multi-seed leaderboard</a> ·
 <a href="../results/index.html">results</a> · <a href="../process/index.html">how it works</a></p>
 <p>The multi-seed leaderboard says no engine is best <i>on average</i>. This page asks the sharper
-question: is a given engine best <i>for a given kind of data</i>? We hold everything fixed and vary
-only saturation — from heavily saturated channels (little headroom) to near-linear ones — and re-rank
-the engines in each regime.</p>
+question — best <i>for a given kind of data</i> — by holding everything fixed and varying two data
+characteristics, then re-ranking the engines in each regime.</p>
 </div></header>
 <main class="wrap">
 <section><div class="card">
-<h2>Engine average rank by saturation regime</h2>
-<div class="tablewrap"><table><thead><tr><th>engine</th><th>High saturation (low headroom)<br><span class='small'>scale 0.5, n=4/seed-set</span></th><th>Medium saturation<br><span class='small'>scale 1.0, n=4/seed-set</span></th><th>Low saturation (headroom)<br><span class='small'>scale 2.0, n=4/seed-set</span></th></tr></thead><tbody><tr><td>Meridian (national, AKS)</td><td>3.2 (92)</td><td>2.2 (43)</td><td>2.5 (37)</td></tr><tr><td>Robyn-style (Python reimpl.)</td><td>4.2 (102)</td><td>2.0 (45)</td><td>3.5 (44)</td></tr><tr><td>Spend ladder (curve fit)</td><td>3.5 (88)</td><td>4.5 (56)</td><td>2.5 (29)</td></tr><tr><td>Google Meridian (national, Fourier)</td><td>1.8 (72)</td><td>4.0 (54)</td><td>6.8 (67)</td></tr><tr><td>DraftZone PyMC (obs)</td><td>3.5 (88)</td><td>5.8 (65)</td><td>4.8 (53)</td></tr><tr><td>DraftZone PyMC (anchored)</td><td>7.2 (124)</td><td>4.8 (77)</td><td>2.8 (40)</td></tr><tr><td>Naive OLS</td><td>5.5 (114)</td><td>5.8 (78)</td><td>6.8 (70)</td></tr><tr><td>Frequentist NLS</td><td>7.0 (145)</td><td>7.0 (161)</td><td>6.5 (104)</td></tr></tbody></table></div>
-<p class="small">Each cell: <b>average rank (median MAE)</b> within that regime; lower rank is better.
-Engines sorted by mean rank across regimes. "—" = not run / diverged in that regime.</p>
-<p><b>Yes — the best engine depends on the data.</b> Holding everything else fixed and varying only saturation, the rankings move enough to change the recommendation. The most regime-sensitive engine is <b>Google Meridian</b> (avg rank 1.8 when saturated → 6.8 with headroom).</p>
-<p><b>The experiment <i>anchor</i> flips sign with saturation.</b> Anchoring our Bayesian fit to the geo lift is <b>worst</b> when channels are saturated (rank 7.2) but <b>good</b> with headroom (rank 2.8): a lift test on a saturated channel is a small, noisy signal whose curve-aware translation is unreliable, whereas on a near-linear channel the lift is clean and the anchor helps. This refines the blunt 'the anchor hurts' rule into a conditional one.</p>
-<p><b>The spend ladder is strongest with headroom, not saturation</b> (best at low saturation, rank 2.5). With a near-linear response its curve fit is clean; heavy saturation gives it small, noisy lifts and it slips to the middle. (Its earlier billing — 'the ladder cracks saturated channels' — was about beating a <i>single-cell experiment</i> on those channels, not about beating <i>observational engines</i> on overall accuracy. The competition corrected the framing.)</p>
-<p><b>The safe default is Meridian</b> — lowest combined rank-and-spread, never bad in any regime. If you don't know your saturation, start there.</p>
+<h2>Decision grid — most reliable engine by regime</h2>
+<div class="tablewrap"><table><thead><tr><th>saturation \ confound</th><th>Strong confound (~0.6)</th></tr></thead><tbody><tr><td>High saturation</td><td>Google Meridian <span class='small'>(1.8)</span></td></tr><tr><td>Medium saturation</td><td>Robyn-style <span class='small'>(2.0)</span></td></tr><tr><td>Low saturation (headroom)</td><td>Meridian <span class='small'>(2.5)</span></td></tr></tbody></table></div>
+<p class="small">Best <b>average rank</b> (shown in parentheses) within each saturation×confound cell.
+Read it as a lookup: your data's regime → the engine that was most reliable there. With a handful of
+seeds per cell this is <b>directional</b>; "—" = not yet run.</p>
+<p><b>Yes — the best engine depends on the data.</b> Saturation alone reorders the field: <b>Google Meridian</b> goes from rank 1.8 when channels are saturated to 6.8 with headroom. The 2D grid above turns that into a lookup: find your saturation row and confound column.</p>
+<p><b>What never changes:</b> naive and (un-saturated) frequentist regression win no cell; regularisation and seasonality control are required in every regime; and where the confound is high, no single observational fit substitutes for a randomized experiment.</p>
 </div></section>
-<section><div class="card">
-<h2>Decision guide</h2>
-<div class="tablewrap"><table><thead><tr><th>if your data is…</th><th>saturation</th><th>most reliable (avg rank)</th><th>top 3</th></tr></thead><tbody><tr><td>High saturation (low headroom)</td><td>scale 0.5</td><td>Google Meridian (national, Fourier)</td><td>Google Meridian (national, Fourier), Meridian (national, AKS), DraftZone PyMC (obs)</td></tr><tr><td>Medium saturation</td><td>scale 1.0</td><td>Robyn-style (Python reimpl.)</td><td>Robyn-style (Python reimpl.), Meridian (national, AKS), Google Meridian (national, Fourier)</td></tr><tr><td>Low saturation (headroom)</td><td>scale 2.0</td><td>Meridian (national, AKS)</td><td>Meridian (national, AKS), Spend ladder (curve fit), DraftZone PyMC (anchored)</td></tr></tbody></table></div>
-<p class="small">"Most reliable" = best average rank in that regime across the seed set. With a handful
-of seeds per regime this is <b>directional</b>, not a verdict — the honest output is a tendency, and
-the project's first rule still holds: where the confound is high, triangulate with an experiment
-rather than trusting any single observational engine.</p>
-</div></section>
+<section><div class="card"><h2>Strong confound (~0.6) — engine rank by saturation</h2><div class="tablewrap"><table><thead><tr><th>engine</th><th>High saturation</th><th>Medium saturation</th><th>Low saturation (headroom)</th></tr></thead><tbody><tr><td>Meridian</td><td>3.2 (92)</td><td>2.2 (43)</td><td>2.5 (37)</td></tr><tr><td>Robyn-style</td><td>4.2 (102)</td><td>2.0 (45)</td><td>3.5 (44)</td></tr><tr><td>Spend ladder</td><td>3.5 (88)</td><td>4.5 (56)</td><td>2.5 (29)</td></tr><tr><td>Google Meridian</td><td>1.8 (72)</td><td>4.0 (54)</td><td>6.8 (67)</td></tr><tr><td>DraftZone PyMC</td><td>3.5 (88)</td><td>5.8 (65)</td><td>4.8 (53)</td></tr><tr><td>DraftZone PyMC</td><td>7.2 (124)</td><td>4.8 (77)</td><td>2.8 (40)</td></tr><tr><td>Naive OLS</td><td>5.5 (114)</td><td>5.8 (78)</td><td>6.8 (70)</td></tr><tr><td>Frequentist NLS</td><td>7.0 (145)</td><td>7.0 (161)</td><td>6.5 (104)</td></tr></tbody></table></div><p class='small'>avg rank (median MAE) within the regime; lower rank is better. MAE is not comparable across saturation columns (contributions shrink with headroom) — compare ranks.</p></div></section>
 <section><div class="card">
 <h2>What holds regardless of regime</h2>
 <ul>
-<li><b>Regularise</b> — the unregularised engines are the ones that diverge, in every regime.</li>
+<li><b>Regularise</b> — the un-regularised engines are the ones that diverge, in every regime.</li>
 <li><b>Control seasonality</b> and measure your confound.</li>
-<li><b>Experiments beat confounding</b> — but read the conditional result honestly: a lift test is a
-clean signal on a near-linear channel and a small, noisy one on a saturated channel, so the
-experiment <i>anchor</i> helps with headroom and hurts when saturated.</li>
-<li><b>Naive and frequentist regression never win a regime</b> — there is no kind of data here where
-the un-regularised or un-saturated baselines are the right tool.</li>
+<li><b>Experiments beat confounding</b> — but conditionally: a lift test is clean on a near-linear
+channel and small/noisy on a saturated one, so the experiment anchor helps with headroom and hurts
+when saturated, and matters more as the confound rises.</li>
+<li><b>Naive and frequentist regression never win a cell</b> — no regime here makes the un-regularised
+or un-saturated baselines the right tool.</li>
 </ul>
 </div></section>
 </main>

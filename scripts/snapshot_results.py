@@ -63,6 +63,7 @@ def main():
                confound=cfg.get("realized_confound"),
                # data REGIME (for conditional "which engine when" analysis)
                saturation_scale=cfg.get("saturation_scale", 1.0),
+               confound_target=cfg.get("target_confound", 0.6),
                seasonal_saturation=bool(cfg.get("seasonal_saturation", False)),
                engines={})
     for e in engines:

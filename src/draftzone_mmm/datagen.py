@@ -189,7 +189,8 @@ def _tune_confound(expected_demand, seasonality, seeds, T, target=TARGET_CONFOUN
     return best
 
 
-def generate_national(seed=2024, seasonal_saturation=False, saturation_scale=1.0):
+def generate_national(seed=2024, seasonal_saturation=False, saturation_scale=1.0,
+                      confound_target=TARGET_CONFOUND):
     """Generate the national weekly dataset and the national portion of the truth.
 
     ``saturation_scale`` multiplies every channel's half-sat: >1 pushes channels LOWER on their
@@ -224,7 +225,8 @@ def generate_national(seed=2024, seasonal_saturation=False, saturation_scale=1.0
 
     # Tune the confound to the target by scaling all season_coefs jointly.
     spend_seed = seed + 7
-    season_scale = _tune_confound(expected_demand, seasonality, spend_seed, T_NATIONAL)
+    season_scale = _tune_confound(expected_demand, seasonality, spend_seed, T_NATIONAL,
+                                  target=confound_target)
     rng_spend = np.random.default_rng(spend_seed)
 
     data = {"week": dates}
@@ -289,7 +291,7 @@ def generate_national(seed=2024, seasonal_saturation=False, saturation_scale=1.0
         meta=dict(
             T=T_NATIONAL, baseline=BASELINE, trend_per_wk=TREND_PER_WK,
             promo_effect=PROMO_EFFECT, price_coef=PRICE_COEF, comp_coef=COMP_COEF,
-            holiday_effect=HOLIDAY_EFFECT, target_corr_spend_season=TARGET_CONFOUND,
+            holiday_effect=HOLIDAY_EFFECT, target_corr_spend_season=confound_target,
             realized_corr_totalspend_season=realized_corr, season_scale=float(season_scale),
             seasonal_saturation=bool(seasonal_saturation),
             sat_seasonal_amp=float(SAT_SEASONAL_AMP) if seasonal_saturation else 0.0,
@@ -638,6 +640,8 @@ def main():
                     help="time-varying saturation (channels more saturated at the NFL peak)")
     ap.add_argument("--saturation-scale", type=float, default=1.0,
                     help=">1 = less saturated / more headroom; <1 = more saturated")
+    ap.add_argument("--confound", type=float, default=TARGET_CONFOUND,
+                    help="target corr(total spend, season): lower = weaker spend↔demand confound")
     ap.add_argument("--hetero-geos", action="store_true",
                     help="test markets scatter (normal) around each channel's national saturation")
     ap.add_argument("--hetero-sigma", type=float, default=0.12,
@@ -664,6 +668,7 @@ def main():
     sealed_dir.mkdir(parents=True, exist_ok=True)
 
     nat_df, truth = generate_national(seed=args.seed, seasonal_saturation=args.seasonal_saturation,
+                                      confound_target=args.confound,
                                       saturation_scale=args.saturation_scale)
     d = truth["avg_contribution_decomposition"]
     nonmedia = (d["baseline"] + d["trend"] + d["seasonality"] + d["promo"]
@@ -701,7 +706,7 @@ def main():
         seed=args.seed,
         n_weeks=T_NATIONAL,
         channels=CHANNELS,
-        target_confound=TARGET_CONFOUND,
+        target_confound=float(args.confound),
         realized_confound=truth["meta"]["realized_corr_totalspend_season"],
         geo_calendar=GEO_CALENDAR,
         n_markets=N_MARKETS,
@@ -739,7 +744,7 @@ def main():
               f"geo media total {sum(gp.values()):.0f} vs national {nat_med:.0f} conv/wk; "
               f"confound={args.geo_confound}, noise={args.geo_noise_frac:.0%}, "
               f"realized corr(spend,demand)={gtp['realized_corr_spend_demand']:+.2f})")
-    print(f"Realized confound corr(total spend, season) = {corr:.3f}  (target {TARGET_CONFOUND})")
+    print(f"Realized confound corr(total spend, season) = {corr:.3f}  (target {args.confound})")
     print(f"Baseline share of conversions ~ {base_share:.0%}")
     print("Sealed truth written to data_sealed/ground_truth.json (pipeline must not read it).")
 
