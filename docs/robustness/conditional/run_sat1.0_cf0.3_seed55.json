@@ -1,0 +1,104 @@
+{
+  "seed": 55,
+  "national_media_total": 946.911711808743,
+  "confound": 0.30044972960408495,
+  "saturation_scale": 1.0,
+  "confound_target": 0.3,
+  "seasonal_saturation": false,
+  "engines": {
+    "naive_ols": {
+      "label": "Naive OLS",
+      "world": "national",
+      "mae": 69.20706942899521,
+      "bias": -38.96598424158777,
+      "hits": 0,
+      "n_ci": 0,
+      "r2": 0.5248685951267906,
+      "diverged": false,
+      "sampling": null
+    },
+    "frequentist_nls": {
+      "label": "Frequentist NLS",
+      "world": "national",
+      "mae": 79.58771057289651,
+      "bias": -24.95942391989232,
+      "hits": 0,
+      "n_ci": 0,
+      "r2": 0.7956627027028091,
+      "diverged": false,
+      "sampling": null
+    },
+    "pymc_obs": {
+      "label": "DraftZone PyMC (obs)",
+      "world": "national",
+      "mae": 59.724290727662044,
+      "bias": -1.074757610230792,
+      "hits": 6,
+      "n_ci": 6,
+      "r2": 0.7521550337716609,
+      "diverged": false,
+      "sampling": {
+        "ess_bulk_min": 532.752639196519,
+        "rhat_max": 1.004994861110379
+      }
+    },
+    "pymc_anchored": {
+      "label": "DraftZone PyMC (anchored)",
+      "world": "national",
+      "mae": 108.71732350596604,
+      "bias": -37.10520630054699,
+      "hits": 6,
+      "n_ci": 6,
+      "r2": 0.7000955271172646,
+      "diverged": false,
+      "sampling": {
+        "ess_bulk_min": 222.37104603243247,
+        "rhat_max": 1.0146886847645489
+      }
+    },
+    "google_meridian": {
+      "label": "Google Meridian (national, Fourier)",
+      "world": "national",
+      "mae": 34.84549784327568,
+      "bias": 2.3321272725641773,
+      "hits": 6,
+      "n_ci": 6,
+      "r2": 0.7578314542770386,
+      "diverged": false,
+      "sampling": null
+    },
+    "google_meridian_aks": {
+      "label": "Meridian (national, AKS)",
+      "world": "national",
+      "mae": 53.96423484213371,
+      "bias": -27.664391815921295,
+      "hits": 6,
+      "n_ci": 6,
+      "r2": 0.8973987102508545,
+      "diverged": false,
+      "sampling": null
+    },
+    "spend_ladder": {
+      "label": "Spend ladder (curve fit)",
+      "world": "national",
+      "mae": 70.0994473375912,
+      "bias": 37.16602286431478,
+      "hits": 5,
+      "n_ci": 6,
+      "r2": null,
+      "diverged": false,
+      "sampling": null
+    },
+    "robyn_style": {
+      "label": "Robyn-style (Python reimpl.)",
+      "world": "national",
+      "mae": 147.59411856332065,
+      "bias": -93.5213600524977,
+      "hits": 0,
+      "n_ci": 0,
+      "r2": 0.6761898554193461,
+      "diverged": false,
+      "sampling": null
+    }
+  }
+}
